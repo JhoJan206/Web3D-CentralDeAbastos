@@ -55,12 +55,16 @@ const pmrem = new THREE.PMREMGenerator(renderer);
   envScene.add(ground);
   scene.environment = pmrem.fromScene(envScene, 0.02).texture;
 }
-scene.environmentIntensity = 0.55;
-scene.fog = new THREE.Fog(0xb9c9d4, 700, 2600);
+scene.environmentIntensity = 0.6;
+scene.fog = new THREE.Fog(0xc3d2dc, 800, 2700);
 
-const hemi = new THREE.HemisphereLight(0xdfeaf5, 0x5a6b43, 0.9);
+const hemi = new THREE.HemisphereLight(0xd9e7f5, 0x7a6e55, 0.6);
 scene.add(hemi);
-const sunLight = new THREE.DirectionalLight(0xfff1dc, 4.2);
+// luz de relleno fría desde el lado opuesto al sol (sin sombras) para no dejar caras planas y oscuras
+const fill = new THREE.DirectionalLight(0xbcd2ea, 0.42);
+fill.position.set(-200, 160, -260);
+scene.add(fill);
+const sunLight = new THREE.DirectionalLight(0xffeccc, 4.9);
 sunLight.castShadow = true;
 sunLight.shadow.mapSize.set(4096, 4096);
 sunLight.shadow.bias = -0.0004;
@@ -91,7 +95,10 @@ const byId = Object.fromEntries(buildings.map((b) => [b.data.id, b]));
 // ---------------------------------------------------------------- Etiquetas
 const zoneLabels = new THREE.Group();
 scene.add(zoneLabels);
+const seenLabels = new Set();
 for (const l of site.labels) {
+  if (seenLabels.has(l.text)) continue; // sin etiquetas repetidas
+  seenLabels.add(l.text);
   const el = document.createElement('div');
   el.className = 'zlabel ' + (l.cls || '');
   el.textContent = l.text;

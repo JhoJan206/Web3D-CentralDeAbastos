@@ -134,6 +134,10 @@ export function buildBuilding(data, scene) {
       const we = mesh(boxGeo(w, H, t), wallMat);
       we.position.set(0, H / 2, s * (d / 2 - t / 2));
       walls.add(we);
+      // coronación del antepecho y bajantes
+      misc.add(s * (w / 2 - t / 2), H, 0, t + 0.2, 0.12, d + 0.2, 0xcfcac0);
+      misc.add(0, H, s * (d / 2 - t / 2), w + 0.2, 0.12, t + 0.2, 0xcfcac0);
+      for (const e of [-1, 1]) misc.add(s * (w / 2 + 0.12), 0, e * (d / 2 - 0.45), 0.16, H - 0.2, 0.16, 0x8f969c);
     }
   }
   g.add(walls);
@@ -146,6 +150,11 @@ export function buildBuilding(data, scene) {
     }
     // puertas laterales peatonales
     for (const s of [-1, 1]) dark.add(s * (w / 2 + 0.04), FLOOR, 0, 0.1, 3, 2.4, 0x4e555c);
+    // pilastras de la estructura entre ventanas y bajantes de aguas lluvias en las esquinas
+    for (const s of [-1, 1]) {
+      for (let z = -d / 2 + 1.2; z <= d / 2 - 1.1; z += 7.5) if (Math.abs(z) > 1.6) misc.add(s * (w / 2 + 0.12), 0, z, 0.32, eave, 0.55, 0xdedbd3);
+      for (const e of [-1, 1]) misc.add(s * (w / 2 + 0.24), 0, e * (d / 2 - 0.45), 0.16, eave - 0.2, 0.16, 0x8f969c);
+    }
   } else if (type === 'flat') {
     // un solo piso: una franja de ventanas
     const y = 1.3;
@@ -156,8 +165,9 @@ export function buildBuilding(data, scene) {
       for (const s of [-1, 1]) glass.add(x, y, s * (d / 2 + 0.03), 2.8, 2.0, 0.1, 0x1b2730);
     }
     // acceso principal sobre la vía peatonal (fachada oeste) con marquesina
-    glass.add(-w / 2 - 0.05, FLOOR, 8, 0.12, 2.9, 6, 0x24333d);
-    misc.add(-w / 2 - 1.6, 3.6, 8, 3.2, 0.25, 9, 0xdedcd6);
+    // (abre al vestíbulo libre entre Control de calidad y el restaurante, sin chocar con ningún recinto)
+    glass.add(-w / 2 - 0.05, FLOOR, 18.5, 0.12, 2.9, 6, 0x24333d);
+    misc.add(-w / 2 - 1.6, 3.6, 18.5, 3.2, 0.25, 9, 0xdedcd6);
   }
 
   // ---------- Portones y muelles en los hastiales ----------
@@ -225,6 +235,13 @@ export function buildBuilding(data, scene) {
       piece(s, r0, r1, Ls / 2, Dz / 2, roofMat, th);
       // tragaluz translúcido a lo largo de la cumbrera (la franja clara de la maqueta)
       piece(s, r0, r1, -Ls / 2, Ls / 2, skyMat, 0.1, false);
+    }
+    // canales en los aleros y remates de los hastiales (se levantan con la cubierta)
+    for (const sg of [-1, 1]) {
+      const gut = mesh(boxGeo(0.35, 0.3, Dz), trussMat);
+      gut.position.set(sg * (w / 2 + ov), eave - Math.tan(a) * ov - 0.12, 0);
+      roof.add(gut);
+      for (const e of [-1, 1]) piece(sg, 0, L, e > 0 ? Dz / 2 - 0.22 : -Dz / 2, e > 0 ? Dz / 2 : -Dz / 2 + 0.22, trussMat, th + 0.22);
     }
     const cap = mesh(boxGeo(1.0, 0.35, d + ov * 2), roofMat);
     cap.position.set(0, ridge + 0.15, 0);

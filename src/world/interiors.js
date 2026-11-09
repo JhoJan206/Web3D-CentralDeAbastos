@@ -28,7 +28,11 @@ class Ctx {
     this.labels = [];
     this.stats = {};
   }
-  label(text, x, z, y = 6) { this.labels.push({ text, pos: [this.data.cx + x, y, this.data.cz + z] }); }
+  // una sola etiqueta por texto dentro de cada edificio
+  label(text, x, z, y = 6) {
+    if (this.labels.some((l) => l.text === text)) return;
+    this.labels.push({ text, pos: [this.data.cx + x, y, this.data.cz + z] });
+  }
   person(x, z) {
     const sc = 0.9 + this.r() * 0.2;
     this.people.add(x, F, z, 1, sc, 1, pick(this.r, CLOTHES));
@@ -121,78 +125,85 @@ export function buildInterior(data) {
 
 // ---------------- Pabellón 1: Frutas y Verduras ----------------
 function frutas(c, { w, d }) {
-  const M = 5.8;
-  let puestos = 0;
-  const stall = (x, z, rot) => {
-    // rot: dirección del frente del puesto (+1 hacia +x, -1 hacia -x)
+  const M = 5.8, H = 3.4, WALL = 0xe9e5dc;
+  const SIGNS = [0x2e7d32, 0xf57c00, 0xc62828, 0x1565c0, 0x6a1b9a, 0x00897b, 0xf9a825];
+  let locales = 0;
+  // contenido de un local: estantería al fondo, mostrador al frente (hacia el pasillo), letrero y vendedor
+  // fx: frente del local (x de la fachada), dir: +1/-1 hacia el pasillo, depth: fondo, zc: centro, len: ancho
+  const local = (fx, dir, depth, zc, len) => {
     const r = c.r;
-    c.box.add(x, F, z - M / 2 + 0.05, M, 1.1, 0.1, 0xd9d6cf); // divisiones bajas
-    c.box.add(x - rot * (M / 2 - 0.05), F, z, 0.1, 1.1, M, 0xd9d6cf);
-    // mostrador
-    c.box.add(x + rot * (M / 2 - 1.2), F, z, 0.9, 0.95, M - 1.2, 0x9e8a73);
-    // cajas de fruta sobre el mostrador
-    for (let k = 0; k < 4; k++) c.box.add(x + rot * (M / 2 - 1.2), F + 0.95, z - 2 + k * 1.33, 0.75, 0.28, 1.1, pick(r, FRUIT));
-    // canastillas apiladas al fondo
-    for (let k = 0; k < 6; k++) {
-      const hx = x - rot * (M / 2 - 1.2) + (r() - 0.5) * 0.6, hz = z - 2.2 + k * 0.9;
-      c.box.add(hx, F, hz, 0.6, 0.3 * (1 + ((r() * 4) | 0)), 0.45, pick(r, [0x2e7d32, 0x1565c0, 0xc62828, 0x6d4c41, 0xf9a825]));
+    const back = fx - dir * depth;
+    // estantería con producto contra el fondo
+    const sx = back + dir * 0.55;
+    c.box.add(sx, F, zc, 0.8, 2.1, len - 1.2, 0x8d6e63);
+    for (let l = 0; l < 3; l++) for (let k = 0; k < 4; k++) {
+      c.box.add(sx, F + 0.35 + l * 0.6, zc - (len - 2) / 2 + 0.4 + k * ((len - 2.4) / 3), 0.6, 0.32, 0.9, pick(r, FRUIT));
     }
-    c.box.add(x, F, z + 1.5, 0.6, 0.85, 0.6, 0x8a8f94); // báscula
-    c.box.add(x + rot * (M / 2 - 1.2), F + 2.5, z, 0.12, 0.6, 3.0, pick(r, [0x2e7d32, 0xf57c00, 0xc62828, 0x1565c0])); // aviso
-    puestos++;
+    // canastillas apiladas a un costado
+    for (let k = 0; k < 3; k++) c.box.add(back + dir * 1.8, F, zc + len / 2 - 0.8, 0.6, 0.3 * (1 + ((r() * 4) | 0)), 0.45, pick(r, [0x2e7d32, 0x1565c0, 0xc62828, 0x6d4c41]));
+    // mostrador de atención al cliente (con paso para el vendedor)
+    const cx = fx - dir * 0.5;
+    c.box.add(cx, F, zc - 0.6, 0.7, 1.0, len - 2.2, 0xb59a7a);
+    for (let k = 0; k < 3; k++) c.box.add(cx, F + 1.0, zc - 0.6 - (len - 3.4) / 2 + k * ((len - 3.4) / 2), 0.55, 0.22, 0.9, pick(r, FRUIT));
+    c.metal.add(cx, F + 1.0, zc + (len - 2.2) / 2 - 1.2, 0.4, 0.15, 0.4, 0xb0bec5); // báscula
+    // fachada: aviso y caja de la cortina enrollable
+    const col = pick(r, SIGNS);
+    c.box.add(fx - dir * 0.05, F + H - 0.7, zc, 0.12, 0.6, len - 0.2, col);
+    c.metal.add(fx - dir * 0.25, F + H - 1.0, zc, 0.35, 0.3, len - 0.3, 0x9aa0a6);
+    c.person(fx - dir * 1.4, zc + 0.6);
+    locales++;
   };
 
-  // locales perimetrales sobre los muros largos
-  for (const s of [-1, 1]) {
-    for (let z = -d / 2 + 6 + M / 2; z < d / 2 - 6; z += M) {
-      const x = s * (w / 2 - 3.4);
-      c.wall(x, z - M / 2, 6, 0.15, 3.4);
-      c.box.add(s * (w / 2 - 6.3), F, z, 0.4, 0.95, M - 1.4, 0x9e8a73); // mostrador
-      for (let k = 0; k < 3; k++) c.box.add(s * (w / 2 - 6.3), F + 0.95, z - 1.5 + k * 1.5, 0.35, 0.28, 1.1, pick(c.r, FRUIT));
-      for (let k = 0; k < 8; k++) c.box.add(s * (w / 2 - 1.5) - s * c.r() * 2, F, z - 2.3 + (k % 4) * 1.4, 0.6, 0.3 * (1 + ((c.r() * 5) | 0)), 0.45, pick(c.r, FRUIT));
-      c.box.add(s * (w / 2 - 6.6), F + 3.0, z, 0.1, 0.5, M - 0.6, pick(c.r, [0x2e7d32, 0xf57c00, 0xc62828, 0x1565c0, 0x6a1b9a]));
-      puestos++;
-    }
-  }
-
-  // islas de puestos 2x2 en cuatro cuadrantes
+  // --- islas de 2 × 2 locales con muros ---
   const islandW = M * 2;
-  const xs = [-(3 + islandW / 2 + 0.5), -(3 + islandW * 1.5 + 4.5), 3 + islandW / 2 + 0.5, 3 + islandW * 1.5 + 4.5];
+  const xs = [-(2 + M), -(2 + islandW + 3 + M), 2 + M, 2 + islandW + 3 + M];
   const zs = [];
-  for (const s of [-1, 1]) for (let k = 0; k < 3; k++) zs.push(s * (5 + islandW / 2 + k * (islandW + 4.5)));
+  for (const s of [-1, 1]) for (let k = 0; k < 3; k++) zs.push(s * (5 + M + k * (islandW + 4.5)));
   for (const ix of xs) for (const iz of zs) {
-    for (const dx of [-M / 2, M / 2]) for (const dz of [-M / 2, M / 2]) stall(ix + dx, iz + dz, dx > 0 ? 1 : -1);
+    c.wall(ix, iz, 0.15, islandW, H, WALL); // muro medianero
+    for (const dz of [-M, 0, M]) c.wall(ix, iz + dz, islandW, 0.15, H, WALL); // muros divisorios
+    for (const dir of [-1, 1]) for (const dz of [-M / 2, M / 2]) local(ix + dir * M, dir, M, iz + dz, M);
+  }
+  // --- locales perimetrales contra los muros largos (dejando libre la puerta lateral del centro) ---
+  const PD = 5;
+  for (const s of [-1, 1]) {
+    const fx = s * (w / 2 - 0.2 - PD);
+    for (let z = -d / 2 + 6 + M / 2; z < d / 2 - 6; z += M) {
+      if (Math.abs(z) < 4.5) continue;
+      c.wall(s * (w / 2 - 0.2 - PD / 2), z - M / 2, PD, 0.15, H, WALL);
+      c.wall(s * (w / 2 - 0.2 - PD / 2), z + M / 2, PD, 0.15, H, WALL);
+      local(fx, -s, PD, z, M);
+    }
   }
 
   // pasillos demarcados
   for (const s of [-1, 1]) {
-    c.paint.add(s * 3, F + 0.01, 0, 0.15, 0.01, d - 14, 0xf2d24b);
-    c.paint.add(0, F + 0.01, s * 3, w - 16, 0.01, 0.15, 0xf2d24b);
+    c.paint.add(s * 2, F + 0.01, 0, 0.15, 0.01, d - 14, 0xf2d24b);
+    c.paint.add(0, F + 0.01, s * 3.5, w - 14, 0.01, 0.15, 0xf2d24b);
   }
-  // estibas recibidas cerca de los muelles posteriores
-  for (let k = 0; k < 14; k++) {
-    const x = -24 + (k % 7) * 8, z = -d / 2 + 3.2 + ((k / 7) | 0) * 2.2;
+  // recepción de mercancía junto a los muelles traseros (a 6 m del muro para no tapar las puertas)
+  for (let k = 0; k < 12; k++) {
+    const x = (k % 6 < 3 ? -1 : 1) * (6 + (k % 3) * 8), z = -d / 2 + 7 + ((k / 6) | 0) * 2.4;
     const y = c.pallet(x, z);
     for (let j = 0; j < 4; j++) c.box.add(x - 0.3 + (j % 2) * 0.6, y + ((j / 2) | 0) * 0.32, z, 0.55, 0.3, 0.9, pick(c.r, FRUIT));
   }
-  c.forklift(-10, -d / 2 + 8, 0.4);
-  c.forklift(14, -d / 2 + 9, -0.8);
+  c.forklift(-3, -d / 2 + 10, 0.4);
 
-  // compradores
+  // compradores (menos densidad), solo en pasillos
   const ax = (v) => Math.abs(v);
-  c.crowd(190, -w / 2 + 7, w / 2 - 7, -d / 2 + 7, d / 2 - 3, (x, z) => !(ax(x) < 2.5 || ax(z) < 2.5 || (ax(x) > 15.6 && ax(x) < 18.6) || (ax(z) > 17 && ax(z) < 20.6) || (ax(z) > 33.2 && ax(z) < 36.7) || (ax(z) > 49.5 && ax(z) < 54)));
+  c.crowd(80, -w / 2 + 7, w / 2 - 7, -d / 2 + 12, d / 2 - 3, (x, z) => !(ax(x) < 1.8 || ax(z) < 3 || (ax(x) > 14 && ax(x) < 16.2) || (ax(x) > 28.8 && ax(x) < 31.7) || (ax(z) > 17 && ax(z) < 20.6) || (ax(z) > 33.2 && ax(z) < 36.7) || ax(z) > 50));
 
-  c.stats.puestos = puestos;
-  c.label('Puestos de frutas y verduras', -19, -10, 5);
-  c.label('Locales perimetrales', w / 2 - 4, 20, 5);
+  c.stats.puestos = locales;
+  c.label('Locales comerciales', -15.8, -10, 5);
   c.label('Pasillo central', 0, 25, 3);
-  c.label('Recepción de mercancía', 0, -d / 2 + 5, 4);
+  c.label('Recepción de mercancía', 0, -d / 2 + 8, 4);
 }
 
 // ---------------- Pabellón 2: Carne y Lácteos ----------------
 function carnes(c, { w, d }) {
   // Cámaras de refrigeración al fondo
-  const z0 = -d / 2 + 0.4, z1 = -d / 2 + 20;
+  // pasillo de 4,6 m junto al muro trasero: los muelles y el portón abren hacia él, no contra las cámaras
+  const z0 = -d / 2 + 5, z1 = -d / 2 + 22;
   const n = 5;
   const cw = (w - 1) / n;
   for (let i = 0; i < n; i++) {
@@ -222,7 +233,6 @@ function carnes(c, { w, d }) {
         for (let z = z0 + 3; z < z1 - 4; z += 1.1) c.box.add(rx, F + 1.2, z, 0.55, 2.1, 0.35, pick(c.r, [0xa83232, 0xb94141, 0x9c2a2a, 0xd9a1a1]));
       }
     }
-    c.label(dairy ? 'Cámara de lácteos' : 'Cámara de cárnicos', x, (z0 + z1) / 2, 6.5);
   }
   c.stats.camaras = n;
 
@@ -263,7 +273,7 @@ function carnes(c, { w, d }) {
   c.wallDoor(w / 4 + 2, zp0 + 9, w / 2 - 4, 'x', 2);
   c.wall(w / 4 + 2, zp0 + 4.5, 0.15, 9, 3.2);
   for (let k = 0; k < 5; k++) {
-    const x = 9 + k * 4.6, z = zp1 - 5;
+    const x = 9 + k * 4.6, z = zp1 - 9;
     const y = c.pallet(x, z);
     c.goodsStack(x, z, y, k % 2 ? 'meat' : 'dairy');
   }
@@ -272,7 +282,9 @@ function carnes(c, { w, d }) {
 
   // pasillos
   c.paint.add(0, F + 0.01, 1, w - 6, 0.01, 0.15, 0xf2d24b);
-  c.crowd(110, -w / 2 + 3, w / 2 - 3, -d / 2 + 22, zp0 - 1, (x, z) => !((z > -29 && z < -11) || (z > 13 && z < zp0 - 1) || (z > -3.5 && z < 5.5)));
+  c.label('Cámaras de refrigeración', 0, (z0 + z1) / 2, 6.5);
+  c.label('Pasillo de muelles', 0, -d / 2 + 2.5, 3);
+  c.crowd(55, -w / 2 + 3, w / 2 - 3, -d / 2 + 24, zp0 - 1, (x, z) => !((z > -29 && z < -11) || (z > 13 && z < zp0 - 1) || (z > -3.5 && z < 5.5)));
 
   c.label('Vitrinas refrigeradas', -18, 1, 4.5);
   c.label('Zona de pre-alistamiento', -w / 4 - 2, (zp0 + zp1) / 2, 4.5);
@@ -281,13 +293,14 @@ function carnes(c, { w, d }) {
 
 // ---------------- Pabellón 3: Granos y Abarrotes ----------------
 function granos(c, { w, d }) {
-  const zr0 = -d / 2 + 4, zr1 = 6;
-  c.rack(-w / 2 + 1.5, zr0, zr1, 4, 'sacks');
+  // los racks arrancan a 7 m del muro trasero (frente a muelles) y los de muro paran antes de la puerta lateral
+  const zr0 = -d / 2 + 7, zr1 = 6;
+  c.rack(-w / 2 + 1.5, zr0, -3, 4, 'sacks');
   c.rack(-6.2, zr0, zr1, 4, 'mixed');
   c.rack(-5.0 + 0.1, zr0, zr1, 4, 'sacks');
   c.rack(5.0 - 0.1, zr0, zr1, 4, 'mixed');
   c.rack(6.2, zr0, zr1, 4, 'sacks');
-  c.rack(w / 2 - 1.5, zr0, zr1, 4, 'mixed');
+  c.rack(w / 2 - 1.5, zr0, -3, 4, 'mixed');
   c.paint.add(-2.6, F + 0.01, (zr0 + zr1) / 2, 0.15, 0.01, zr1 - zr0, 0xf2d24b);
   c.paint.add(2.6, F + 0.01, (zr0 + zr1) / 2, 0.15, 0.01, zr1 - zr0, 0xf2d24b);
   c.forklift(0, -20, 0);
@@ -299,7 +312,7 @@ function granos(c, { w, d }) {
   let bodegas = 0;
   const M = 5.8;
   for (const s of [-1, 1]) {
-    for (let z = zr1 + 4 + M / 2; z < d / 2 - 5; z += M) {
+    for (let z = zr1 + 4 + M / 2; z < d / 2 - 8; z += M) {
       const x = s * (w / 2 - 5);
       c.wall(x, z - M / 2, 10, 0.15, 3.2);
       c.wall(s * (w / 2 - 10), z - 1.6, 0.15, M - 3.0, 3.2);
@@ -317,8 +330,8 @@ function granos(c, { w, d }) {
     }
   }
   c.stats.bodegas = bodegas;
-  c.crowd(45, -9, 9, zr1 + 2, d / 2 - 3);
-  c.crowd(10, -2, 2, zr0, zr1);
+  c.crowd(22, -9, 9, zr1 + 2, d / 2 - 3);
+  c.crowd(5, -2, 2, zr0, zr1);
   c.label('Estanterías tipo rack', -12, -20, 8);
   c.label('Pasillo de montacargas', 0, -10, 3);
   c.label('Bodegas de abarrotes', 0, 30, 4.5);
@@ -400,6 +413,13 @@ function administrativo(c, { w, d }) {
     }
     c.label(name, xc, zc, 3.8);
   }
+  // Vestíbulo de acceso (frente a la puerta principal de la fachada oeste)
+  c.wall(-w / 4 - 0.5, 11, w / 2 - 1.8, 0.15);
+  c.paint.add(-w / 4 - 0.5, F + 0.005, 18.5, w / 2 - 2, 0.01, 13, 0xd9d4cb);
+  for (const z of [14.5, 22.5]) c.box.add(-5.5, F, z, 1.6, 0.45, 0.6, 0x546e7a);
+  c.cyl.add(-2.4, F, 13, 0.7, 0.6, 0.7, 0x6d4c41); c.cyl.add(-2.4, F + 0.6, 13, 1.1, 1.3, 1.1, 0x2e7d32);
+  c.person(-6, 18); c.person(-3.5, 20);
+  c.label('Vestíbulo', -5, 18.5, 3.5);
   // Cafetería / restaurante al frente
   const zc0 = 26, zc1 = d / 2 - 0.4;
   c.wall(0, zc0, w - 0.8, 0.15);
@@ -415,13 +435,13 @@ function administrativo(c, { w, d }) {
   c.label('Restaurante / cafetería', 2, (zc0 + zc1) / 2, 3.8);
   // corredor central
   c.paint.add(0, F + 0.005, -8, 2.6, 0.01, 65, 0xeeeeee);
-  c.crowd(14, -0.9, 0.9, -38, 24);
+  c.crowd(7, -0.9, 0.9, -38, 24);
   c.stats.recintos = rooms.length + 1;
 }
 
 // ---------------- Pabellón 4: Suministro Institucional ----------------
 function institucional(c, { w, d }) {
-  const zr0 = -d / 2 + 4, zr1 = -2;
+  const zr0 = -d / 2 + 7, zr1 = -2;
   c.rack(-w / 2 + 1.2, zr0, zr1, 4, 'mixed');
   c.rack(-5.6, zr0, zr1, 4, 'sacks');
   c.rack(-4.4, zr0, zr1, 4, 'mixed');
@@ -467,18 +487,18 @@ function subestacion(c, { w, d }) {
     for (let k = -2; k <= 2; k++) c.box.add(x + k * 0.6, F + 0.3, z + 1.25, 0.08, 1.9, 0.3, 0x5f6d5a);
     for (let k = -1; k <= 1; k++) c.cyl.add(x + k * 0.9, F + 2.6, z, 0.22, 0.9, 0.22, 0x8d6e63);
   }
-  // celdas de media tensión
+  // celdas de media tensión contra el muro izquierdo
   for (let k = 0; k < 5; k++) c.metal.add(-w / 2 + 1, F, -1 + k * 1.1, 0.9, 2.2, 1.0, 0x90a4ae);
-  // tableros
-  for (let k = 0; k < 3; k++) c.metal.add(w / 2 - 0.8, F, -2 + k * 1.3, 0.6, 2.0, 1.1, 0xb0bec5);
-  // planta de emergencia
-  c.box.add(0, F, d / 2 - 4.2, 7, 2.3, 2.2, 0xf2b705);
-  c.box.add(2.6, F + 2.3, d / 2 - 4.2, 0.5, 1.2, 0.5, 0x37474f);
+  // tableros en la esquina del fondo
+  for (let k = 0; k < 2; k++) c.metal.add(w / 2 - 0.8, F, -d / 2 + 1.5 + k * 1.3, 0.6, 2.0, 1.1, 0xb0bec5);
+  // planta de emergencia contra el muro derecho (la puerta del frente queda libre)
+  c.box.add(w / 2 - 1.7, F, 3, 2.2, 2.3, 7, 0xf2b705);
+  c.box.add(w / 2 - 1.7, F + 2.3, 5.2, 0.5, 1.2, 0.5, 0x37474f);
   c.paint.add(0, F + 0.01, 0.5, w - 3, 0.01, 0.15, 0xf2d24b);
   c.person(-2, 1.5);
   c.stats.transformadores = 2;
   c.label('Transformadores', 0, -d / 2 + 4, 4);
-  c.label('Planta de emergencia', 0, d / 2 - 4, 3.5);
+  c.label('Planta de emergencia', w / 2 - 2, 3, 3.5);
 }
 
 function reciclaje(c, { w, d }) {
@@ -534,8 +554,8 @@ function tanques(c, { w, d }) {
   tank(1, 0xb0413e, 'Red contra incendios');
   c.box.add(w / 2 - 5, F, -2, 6, 3.2, 7, 0xe8e6e0);
   c.box.add(w / 2 - 5, F + 3.2, -2, 6.6, 0.3, 7.6, 0x6e7479);
-  c.metal.add(-4, F + 1, 6.5, 22, 0.35, 0.35, 0x1e5aa8);
-  c.metal.add(2, F + 1.6, 7.3, 22, 0.35, 0.35, 0xc0392b);
+  c.metal.add(-4, F + 1, -7.6, 22, 0.35, 0.35, 0x1e5aa8);
+  c.metal.add(2, F + 1.6, -8.4, 22, 0.35, 0.35, 0xc0392b);
   c.stats.tanques = 2;
   c.label('Cuarto de bombas', w / 2 - 5, -2, 5);
 }

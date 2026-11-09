@@ -75,8 +75,8 @@ export const BUILDINGS = [
     publicFront: true,
     accent: '#7cb342',
     description:
-      'El pabellón de mayor tamaño. Concentra la comercialización mayorista y minorista de productos frescos con una retícula de puestos modulares de 5,8 m, locales perimetrales y amplios pasillos de circulación. Su acceso principal da al parqueadero de visitantes y público.',
-    zones: ['Puestos modulares (5,8 m × 5,8 m)', 'Locales comerciales perimetrales', 'Pasillos centrales de circulación', 'Muelles de carga y descarga posteriores', 'Acceso peatonal desde el parqueadero'],
+      'El pabellón de mayor tamaño. Concentra la comercialización mayorista y minorista de productos frescos con una retícula de locales comerciales modulares de 5,8 m, cerrados con muros y mostrador de atención, locales perimetrales y amplios pasillos de circulación. Su acceso principal da al parqueadero de visitantes y público.',
+    zones: ['Locales modulares de 5,8 m × 5,8 m con mostrador', 'Locales perimetrales', 'Pasillos centrales de circulación', 'Muelles de carga y descarga posteriores', 'Acceso peatonal desde el parqueadero'],
     budgetRef: 2,
   },
   {

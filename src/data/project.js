@@ -46,7 +46,7 @@ export const SCHEDULE = [
   { id: 'H-02', desc: 'Presupuesto y plan de compras', date: '01 oct' },
   { id: 'H-03', desc: 'Informe escrito final', date: '03 oct' },
   { id: 'H-04', desc: 'Entrega del proyecto', date: '06 oct' },
-  { id: 'H-05', desc: 'Sustentación final', date: '13 oct' },
+  { id: 'H-05', desc: 'Sustentación final', date: '10 nov' },
 ];
 
 export const RISKS = [

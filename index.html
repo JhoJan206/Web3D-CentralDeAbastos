@@ -8,16 +8,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23243b2a'/><path d='M5 22 L16 9 L27 22 Z' fill='%2397c459'/><rect x='9' y='19' width='14' height='6' fill='%23e8efe0'/></svg>" />
+    <link rel="icon" type="image/png" href="/logo.png" />
   </head>
   <body>
     <div id="scene"></div>
     <div id="labels"></div>
 
     <header class="brand">
-      <div class="logo" aria-hidden="true">
-        <svg viewBox="0 0 32 32"><path d="M4 21 L16 8 L28 21 Z" fill="currentColor"/><rect x="8" y="19" width="16" height="7" rx="1" fill="currentColor" opacity=".55"/></svg>
-      </div>
+      <div class="logo"><img src="/logo.png" alt="Logo Ingenia Santander" /></div>
       <div>
         <h1>Central de Abastos</h1>
         <p>Ingenia Santander · Grupo 3 · UDES</p>
@@ -53,12 +51,7 @@
       </button>
     </div>
 
-    <div id="hint">
-      <span><kbd>Arrastrar</kbd> rotar</span>
-      <span><kbd>Clic der.</kbd> desplazar</span>
-      <span><kbd>Rueda</kbd> zoom</span>
-      <span><kbd>Clic</kbd> en un edificio para entrar</span>
-    </div>
+    <div id="vignette" aria-hidden="true"></div>
 
     <div id="tooltip"></div>
 

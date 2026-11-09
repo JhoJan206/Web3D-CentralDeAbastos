@@ -193,7 +193,6 @@ export function buildSite(scene) {
   // pasos peatonales donde las vías entre pabellones cruzan el anillo
   for (const rd of [p1p2, p2p3]) for (const zc of [back.z + 8, front.z - 8]) for (let k = -3; k <= 3; k++) paint.add(rd.x + k * 1.1, 0.07, zc, 0.55, 0.02, 3.2, W);
   labels.push({ text: 'Vía perimetral de servicio', pos: [-40, 2, back.z], cls: 'zone small' });
-  labels.push({ text: 'Vía perimetral de servicio', pos: [60, 2, front.z], cls: 'zone small' });
   labels.push({ text: 'Vía P1 – P2', pos: [p1p2.x, 2, -20], cls: 'zone small' });
   labels.push({ text: 'Vía P2 – P3', pos: [p2p3.x, 2, -20], cls: 'zone small' });
 
@@ -216,6 +215,15 @@ export function buildSite(scene) {
   const med = mesh(boxGeo(L, 0.35, median.v1 - median.v0), MAT.grass, { cast: false });
   med.position.set(0, 0.12, (median.v0 + median.v1) / 2);
   hw.add(med);
+  // defensas metálicas (guardarraíl) a ambos lados del separador central
+  {
+    const gr = new Batch(MAT.metal);
+    for (const v of [median.v0 + 0.35, median.v1 - 0.35]) {
+      gr.add(0, 0.5, v, L, 0.32, 0.08, 0xb7bcc0);
+      for (let u = -L / 2; u <= L / 2; u += 4) gr.add(u, 0, v + (v < 13.75 ? 0.08 : -0.08), 0.12, 0.8, 0.12, 0x8a9096);
+    }
+    hw.add(gr.build());
+  }
   strip(far.v1, far.v1 + 4, MAT.concrete, -0.03);
 
   // carril adicional frente a los accesos (con transiciones de entrada y salida)
@@ -249,6 +257,7 @@ export function buildSite(scene) {
 
   // accesos
   const barrierMat = new THREE.MeshStandardMaterial({ color: 0xd8382b, roughness: 0.5 });
+  const poleMat = new THREE.MeshStandardMaterial({ color: 0xf2c230, roughness: 0.5, metalness: 0.2 });
   for (const e of ENTRANCES) {
     hw.add(flatMesh(roundedRectShape(e.u - e.width / 2, -10, e.u + e.width / 2, aux.v0 + 0.2, 1), layer(MAT.asphalt, LAYER.connector), 0.055));
     hw.add(slabMesh(roundedRectShape(e.u - 0.8, -8, e.u + 0.8, -1, 0.8), layer(MAT.curb, LAYER.island), 0.25, 0.05));
@@ -259,9 +268,24 @@ export function buildSite(scene) {
     ghr.position.set(e.u + e.width / 2 + 3, 3.1, -5);
     hw.add(ghr);
     for (const sg of [-1, 1]) {
+      const v = sg > 0 ? -2 : -7;
       const b = mesh(boxGeo(e.width / 2 - 1.5, 0.12, 0.12), barrierMat);
-      b.position.set(e.u + sg * (e.width / 4 + 0.2), 1.1, sg > 0 ? -2 : -7);
+      b.position.set(e.u + sg * (e.width / 4 + 0.2), 1.1, v);
       hw.add(b);
+      // gabinete de la talanquera (pivote) junto a la isla, anclado al piso
+      const cab = mesh(boxGeo(0.45, 1.05, 0.45), poleMat);
+      cab.position.set(e.u + sg * 1.05, 0.55, v);
+      hw.add(cab);
+      const cap = mesh(boxGeo(0.5, 0.08, 0.5), barrierMat);
+      cap.position.set(e.u + sg * 1.05, 1.1, v);
+      hw.add(cap);
+      // poste de apoyo en la punta del brazo
+      const tip = mesh(boxGeo(0.1, 1.05, 0.1), poleMat);
+      tip.position.set(e.u + sg * (e.width / 2 - 0.6), 0.55, v);
+      hw.add(tip);
+      const fork = mesh(boxGeo(0.12, 0.14, 0.35), poleMat);
+      fork.position.set(e.u + sg * (e.width / 2 - 0.6), 1.05, v);
+      hw.add(fork);
     }
     hp.add(e.u - e.width / 4, 0.08, -4, 0.4, 0.02, 3, W);
     hp.add(e.u + e.width / 4, 0.08, -4, 0.4, 0.02, 3, W);
@@ -324,7 +348,7 @@ export function buildSite(scene) {
     paint.add(x + (ry ? -1.6 : 1.6), 0.07, roadEdge + 6, 0.8, 0.02, 1.1, W, ry);
   }
   const islands = [];
-  labels.push({ text: 'Parqueadero de visitantes y público', pos: [-100, 3, roadEdge + 9], cls: 'zone' });
+  labels.push({ text: 'Parqueadero de visitantes y público', pos: [-100, 3, roadEdge + 9], cls: 'zone small' });
 
   // ---------- Parqueadero de camiones en espera ----------
   // Bahía paralela a la autopista, abierta hacia la vía perimetral (sin franja verde), como el plano.
@@ -352,7 +376,7 @@ export function buildSite(scene) {
   hw.add(slabMesh(roundedRectShape(T.u1 + 0.8, T.v0, T.u1 + 6, -2, 2), GRASS, 0.2, 0.05));
   {
     const [lx, lz] = fromUV((T.u0 + T.u1) / 2 - 15, T.v0 - 4);
-    labels.push({ text: 'Parqueadero de camiones en espera', pos: [lx, 3, lz], cls: 'zone' });
+    labels.push({ text: 'Parqueadero de camiones en espera', pos: [lx, 3, lz], cls: 'zone small' });
   }
 
   // ---------- Zonas verdes según plano ----------
@@ -365,6 +389,20 @@ export function buildSite(scene) {
     [127, 20.1, 134, 31, 2], // P4: costado de los muelles frontales
   ];
   greens.forEach(([a, b, c, d, rr]) => group.add(slabMesh(roundedRectShape(a, b, c, d, rr), GRASS, 0.2, 0.04)));
+  // arbustos ornamentales en los jardines
+  {
+    const bush = new Batch(MAT.foliage, new THREE.IcosahedronGeometry(1, 1).translate(0, 0.55, 0));
+    const br = rng(31);
+    const shades = [0x3f6b2a, 0x5b8a36, 0x4d7a2f, 0x6b8f3a, 0x7a9a3f];
+    for (const [a, b, c, d] of greens) {
+      const n = Math.round(((c - a) * (d - b)) / 22);
+      for (let i = 0; i < n; i++) {
+        const sz = 0.6 + br() * 0.7;
+        bush.add(a + 1.2 + br() * (c - a - 2.4), 0.18, b + 1.2 + br() * (d - b - 2.4), sz * 1.2, sz * 0.8, sz * 1.1, shades[(br() * shades.length) | 0], br() * 6);
+      }
+    }
+    group.add(bush.build());
+  }
   // vía peatonal entre el Pabellón 3 y el Administrativo (sin zona verde)
   group.add(slabMesh(roundedRectShape(74.2, -74.5, 78.6, 72.5, 0.6), layer(MAT.concrete, LAYER.island), 0.12, 0.04));
   for (const zc of [-71, 69.5]) for (let k = -1; k <= 1; k++) paint.add(76.4 + k * 1.2, 0.07, zc + (zc < 0 ? -9 : 9), 0.6, 0.02, 8.4, W);
@@ -398,7 +436,7 @@ export function buildSite(scene) {
   });
   group.add(fence.build());
   group.add(posts.build());
-  labels.push({ text: 'Ladera y aislamiento ambiental', pos: [-70, 10, -122], cls: 'zone' });
+  labels.push({ text: 'Ladera y aislamiento ambiental', pos: [-70, 10, -122], cls: 'zone small' });
 
 
   // ---------- Iluminación ----------
@@ -459,15 +497,22 @@ export function buildSite(scene) {
   });
   islands.forEach(([x, z]) => { addTree(x, z - 3, 0.75); addTree(x, z + 3, 0.75); });
   for (let x = 82; x <= 97; x += 7.5) { addTree(x, 55, 0.6); addTree(x, -62, 0.7); }
-  group.add(buildTrees(trees));
+  const palms = [];
+  for (const e of ENTRANCES) for (const sg of [-1, 1]) {
+    const [px, pz] = fromUV(e.u + sg * (e.width / 2 + (sg > 0 ? 9 : 3)), -4);
+    palms.push([px, pz]);
+  }
+  for (const x of [-99.8, -85.2]) palms.push([x, 67.5]); // plazoleta del P1
+  for (const x of [80, 98]) palms.push([x, 58]); // jardín frontal del Administrativo
+  group.add(buildTrees(trees, palms));
 
   scene.add(group);
   return { group, labels, carSpots, truckSpots, highway: hw };
 }
 
-function buildTrees(list) {
+function buildTrees(list, palms = []) {
   const g = new THREE.Group();
-  const trunkGeo = new THREE.CylinderGeometry(0.18, 0.28, 1, 6).translate(0, 0.5, 0);
+  const trunkGeo = new THREE.CylinderGeometry(0.16, 0.3, 1, 7).translate(0, 0.5, 0);
   const crownGeo = new THREE.IcosahedronGeometry(1, 1);
   const trunks = new Batch(MAT.bark, trunkGeo);
   const crowns = new Batch(MAT.foliage, crownGeo);
@@ -478,9 +523,29 @@ function buildTrees(list) {
     const h = 3.2 * s;
     trunks.add(x, y, z, s, h, s, 0x5b4330);
     const cr = 2.6 * s;
-    crowns.add(x, y + h + cr * 0.55, z, cr * (0.9 + r() * 0.3), cr * (0.8 + r() * 0.3), cr * (0.9 + r() * 0.3), greens[(r() * greens.length) | 0], r() * 6);
+    const base = greens[(r() * greens.length) | 0];
+    const c = new THREE.Color(base);
+    // copa irregular: un volumen principal y dos secundarios con tonos cercanos
+    crowns.add(x, y + h + cr * 0.5, z, cr * (0.95 + r() * 0.25), cr * (0.8 + r() * 0.25), cr * (0.95 + r() * 0.25), base, r() * 6);
+    for (let k = 0; k < 2; k++) {
+      const ang = r() * Math.PI * 2, off = cr * (0.45 + r() * 0.25);
+      const cc = c.clone().offsetHSL((r() - 0.5) * 0.03, 0, (r() - 0.4) * 0.08).getHex();
+      crowns.add(x + Math.cos(ang) * off, y + h + cr * (0.25 + r() * 0.5), z + Math.sin(ang) * off, cr * 0.65, cr * 0.55, cr * 0.65, cc, r() * 6);
+    }
+  }
+  // palmas ornamentales
+  const leafGeo = new THREE.BoxGeometry(1, 1, 1).translate(0.5, 0, 0);
+  const leaves = new Batch(MAT.foliage, leafGeo);
+  for (const [x, z] of palms) {
+    const y = terrainHeight(x, z) - 0.2, h = 7 + r() * 2;
+    trunks.add(x, y, z, 0.75, h, 0.75, 0x8a7458);
+    for (let k = 0; k < 8; k++) {
+      const ang = (k / 8) * Math.PI * 2 + r() * 0.3;
+      leaves.add(x, y + h, z, 3.4, 0.08, 0.7, k % 2 ? 0x4f7d2c : 0x5f8f34, ang, 0, -0.45 - r() * 0.25);
+    }
   }
   g.add(trunks.build());
   g.add(crowns.build());
+  if (palms.length) g.add(leaves.build());
   return g;
 }

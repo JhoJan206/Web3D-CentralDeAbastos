@@ -1,4 +1,4 @@
-import { PROJECT, KPIS, BUDGET, TEAM, SCHEDULE, RISKS, ODS, fmtM } from '../data/project.js';
+import { PROJECT, KPIS, BUDGET, TEAM, SCHEDULE, ODS, fmtM } from '../data/project.js';
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const check = '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>';
@@ -13,6 +13,7 @@ const TABS = {
       <div class="kpis">
         ${KPIS.map((k) => `<div class="kpi${k.hero ? ' wide hero' : ''}${k.bar ? ' wide' : ''}"><b>${esc(k.value)}</b><span>${esc(k.label)}</span>${k.bar ? `<div class="bar"><i style="width:${k.bar}%"></i></div>` : ''}</div>`).join('')}
       </div>
+      <div class="ods-grid">${ODS.filter((o) => [2, 9].includes(o.n)).map((o) => `<div class="ods-chip"><span class="n" style="background:${o.color}">${o.n}</span>ODS ${o.n} · ${esc(o.name)}</div>`).join('')}</div>
       <div class="meta-line">${esc(PROJECT.location)}</div>`,
   },
   presupuesto: {
@@ -37,14 +38,6 @@ const TABS = {
     html: () => `
       <div class="kpis"><div class="kpi wide"><b>5 / 5</b><span>Hitos entregados</span><div class="bar"><i style="width:100%"></i></div></div></div>
       <ul class="timeline done">${SCHEDULE.map((s) => `<li><b>${s.id}</b> ${esc(s.desc)}<span class="date">${s.date}</span></li>`).join('')}</ul>`,
-  },
-  riesgos: {
-    title: 'Riesgos',
-    html: () => `<ul class="list">${RISKS.map((r) => `<li><b>${esc(r.event)}</b><div class="tags"><span class="tag ${r.prob}">P. ${r.prob}</span><span class="tag ${r.impact}">I. ${r.impact}</span><span class="tag ok">Mitigado</span></div></li>`).join('')}</ul>`,
-  },
-  ods: {
-    title: 'ODS',
-    html: () => `<div class="ods-grid">${ODS.map((o) => `<div class="ods-chip"><span class="n" style="background:${o.color}">${o.n}</span>${esc(o.name)}</div>`).join('')}</div>`,
   },
 };
 
@@ -78,7 +71,7 @@ export function renderCard(b, { onBack, onRoof } = {}) {
   const ref = BUDGET[d.budgetRef];
   const s = b.stats || {};
   const extra = [];
-  if (s.puestos) extra.push(['Puestos comerciales', s.puestos]);
+  if (s.puestos) extra.push(['Locales comerciales', s.puestos]);
   if (s.camaras) extra.push(['Cámaras de refrigeración', s.camaras]);
   if (s.locales) extra.push(['Locales con vitrina', s.locales]);
   if (s.bodegas) extra.push(['Bodegas comerciales', s.bodegas]);

@@ -7,67 +7,96 @@ const CAR_COLORS = [0xf5f5f5, 0xd32f2f, 0x212121, 0x9e9e9e, 0x1565c0, 0xfbc02d, 
 const BLACK = 0x1a1a1a, GLASS = 0x1b2730;
 
 // Especificaciones locales: eje X = hacia adelante
+const HEAD = 0xfff4d6, TAIL = 0xd32020, TRIM = 0x2b2f33;
+const lights = (xf, xr, y, zo, w = 0.35) => [
+  [xf, y, zo, 0.06, 0.16, w, HEAD, 'light'], [xf, y, -zo, 0.06, 0.16, w, HEAD, 'light'],
+  [xr, y, zo, 0.06, 0.16, w, TAIL, 'light'], [xr, y, -zo, 0.06, 0.16, w, TAIL, 'light'],
+];
 const SPEC = {
   car: (c) => [
-    [0, 0.3, 0, 4.4, 0.75, 1.85, c],
-    [-0.3, 1.05, 0, 2.3, 0.6, 1.65, GLASS, 'glass'],
-    [-0.3, 1.64, 0, 2.0, 0.08, 1.6, c],
-    ...wheels([1.4, -1.4], 0.85),
+    [0, 0.32, 0, 4.4, 0.55, 1.84, c], // carrocería
+    [0.15, 0.87, 0, 2.5, 0.12, 1.76, c], // cintura
+    [-0.25, 0.99, 0, 2.2, 0.48, 1.62, GLASS, 'glass'], // cabina
+    [-0.3, 1.47, 0, 1.9, 0.08, 1.56, c], // techo
+    [2.18, 0.3, 0, 0.12, 0.28, 1.86, TRIM], [-2.18, 0.3, 0, 0.12, 0.28, 1.86, TRIM], // parachoques
+    ...lights(2.23, -2.23, 0.62, 0.62),
+    ...wheels([1.35, -1.35], 0.86, 0.68),
   ],
   taxi: () => SPEC.car(0xf6c40f),
   truck: (c, box = 0xf2f2f2) => [
     [0, 0.5, 0, 8.2, 0.35, 1.2, 0x333333],
-    [3.1, 0.6, 0, 1.9, 2.3, 2.3, c],
+    [3.1, 0.62, 0, 1.9, 2.3, 2.3, c],
     [4.06, 1.75, 0, 0.06, 0.85, 2.0, GLASS, 'glass'],
+    [3.1, 1.75, 1.16, 1.0, 0.6, 0.04, GLASS, 'glass'], [3.1, 1.75, -1.16, 1.0, 0.6, 0.04, GLASS, 'glass'],
+    [4.1, 0.45, 0, 0.12, 0.35, 2.3, TRIM],
     [-1.0, 0.95, 0, 6.0, 2.8, 2.45, box],
-    ...wheels([3.2, -2.2, -3.2], 1.05),
+    ...lights(4.13, -4.03, 0.75, 0.9),
+    ...wheels([3.2, -2.2, -3.2], 1.05, 0.95),
   ],
   mula: (c, box = 0xeeeeee) => [
     [0, 0.55, 0, 16, 0.35, 1.2, 0x333333],
-    [6.7, 0.6, 0, 2.4, 2.9, 2.5, c],
+    [6.7, 0.65, 0, 2.4, 2.85, 2.5, c],
     [7.92, 2.0, 0, 0.06, 0.9, 2.2, GLASS, 'glass'],
-    [6.7, 3.5, 0, 1.8, 0.6, 2.4, c],
+    [6.7, 2.0, 1.26, 1.2, 0.7, 0.04, GLASS, 'glass'], [6.7, 2.0, -1.26, 1.2, 0.7, 0.04, GLASS, 'glass'],
+    [6.6, 3.5, 0, 1.9, 0.55, 2.4, c], // deflector
+    [7.98, 0.45, 0, 0.12, 0.4, 2.5, TRIM],
+    [5.2, 0.9, 0, 0.6, 0.6, 2.2, 0x9aa0a6], // tanque de combustible
     [-1.6, 1.25, 0, 13.6, 2.9, 2.55, box],
-    ...wheels([6.9, 4.8, -5.0, -6.3, -7.6], 1.1),
+    [-1.6, 4.13, 0, 13.6, 0.06, 2.6, 0xd9dcdf], // tapa del furgón
+    ...lights(8.0, -8.42, 0.75, 1.0),
+    ...wheels([6.9, 4.8, -5.0, -6.3, -7.6], 1.1, 1.0),
   ],
 };
-function wheels(xs, zo) {
+function wheels(xs, zo, dia = 0.8) {
   const out = [];
-  for (const x of xs) for (const s of [-1, 1]) out.push([x, 0, s * zo, 0.8, 0.8, 0.3, BLACK]);
+  for (const x of xs) for (const s of [-1, 1]) out.push([x, 0, s * zo, dia, dia, 0.3, BLACK, 'wheel']);
   return out;
 }
+// rueda: cilindro con el eje en Z local, apoyado en el piso
+const wheelGeo = new THREE.CylinderGeometry(0.5, 0.5, 1, 14).rotateX(Math.PI / 2).translate(0, 0.5, 0);
+const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
 export class VehicleBatch {
   constructor() {
-    this.body = new Batch(MAT.plastic);
+    this.body = new Batch(new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.35, metalness: 0.3 }));
     this.glass = new Batch(MAT.glass);
+    this.wheel = new Batch(new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.85 }), wheelGeo);
+    this.light = new Batch(lightMat);
   }
   add(type, x, z, ry, ...args) {
     const c = Math.cos(ry), s = Math.sin(ry);
     for (const [lx, ly, lz, sx, sy, sz, col, kind] of SPEC[type](...args)) {
       const wx = x + lx * c + lz * s, wz = z - lx * s + lz * c;
-      (kind === 'glass' ? this.glass : this.body).add(wx, ly, wz, sx, sy, sz, col, ry);
+      const b = kind === 'glass' ? this.glass : kind === 'wheel' ? this.wheel : kind === 'light' ? this.light : this.body;
+      b.add(wx, ly, wz, sx, sy, sz, col, ry);
     }
   }
   build(group) {
     group.add(this.body.build());
     group.add(this.glass.build({ cast: false }));
+    group.add(this.wheel.build());
+    group.add(this.light.build({ cast: false }));
   }
 }
 
 const geoCache = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
 const matCache = new Map();
-const paintMat = (col) => {
-  if (!matCache.has(col)) matCache.set(col, new THREE.MeshStandardMaterial({ color: col, roughness: 0.4, metalness: 0.2 }));
-  return matCache.get(col);
+const paintMat = (col, kind) => {
+  const key = col + ':' + kind;
+  if (!matCache.has(key)) {
+    matCache.set(key, kind === 'light' ? new THREE.MeshBasicMaterial({ color: col })
+      : kind === 'wheel' ? new THREE.MeshStandardMaterial({ color: col, roughness: 0.85 })
+      : new THREE.MeshStandardMaterial({ color: col, roughness: 0.35, metalness: 0.3 }));
+  }
+  return matCache.get(key);
 };
 function vehicleMesh(type, ...args) {
   const g = new THREE.Group();
   for (const [lx, ly, lz, sx, sy, sz, col, kind] of SPEC[type](...args)) {
-    const m = new THREE.Mesh(geoCache, kind === 'glass' ? MAT.glass : paintMat(col));
+    const m = new THREE.Mesh(kind === 'wheel' ? wheelGeo : geoCache, kind === 'glass' ? MAT.glass : paintMat(col, kind));
     m.position.set(lx, ly, lz);
     m.scale.set(sx, sy, sz);
-    m.castShadow = true;
+    m.castShadow = kind !== 'light';
     g.add(m);
   }
   return g;
