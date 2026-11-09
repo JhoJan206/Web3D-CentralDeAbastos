@@ -113,7 +113,7 @@ class Ctx {
 }
 
 export function buildInterior(data) {
-  const fn = { p1: frutas, p2: carnes, p3: granos, admin: administrativo, p4: institucional }[data.id];
+  const fn = { p1: frutas, p2: carnes, p3: granos, admin: administrativo, p4: institucional, sub: subestacion, rec: reciclaje, com: compostaje, tan: tanques }[data.id];
   const c = new Ctx(data, data.id.charCodeAt(data.id.length - 1) * 31 + 7);
   fn(c, data);
   return c.build();
@@ -456,4 +456,86 @@ function institucional(c, { w, d }) {
   c.label('Zona de picking', 0, 2, 3.5);
   c.label('Pedidos consolidados', 0, 15, 4);
   c.label('Despacho institucional', 0, 31, 3);
+}
+
+// ---------------- Servicios ----------------
+function subestacion(c, { w, d }) {
+  // transformadores con radiadores y aisladores
+  for (let i = 0; i < 2; i++) {
+    const x = -3.2 + i * 6.4, z = -d / 2 + 4;
+    c.box.add(x, F, z, 3.2, 2.6, 2.2, 0x6f7f6a);
+    for (let k = -2; k <= 2; k++) c.box.add(x + k * 0.6, F + 0.3, z + 1.25, 0.08, 1.9, 0.3, 0x5f6d5a);
+    for (let k = -1; k <= 1; k++) c.cyl.add(x + k * 0.9, F + 2.6, z, 0.22, 0.9, 0.22, 0x8d6e63);
+  }
+  // celdas de media tensión
+  for (let k = 0; k < 5; k++) c.metal.add(-w / 2 + 1, F, -1 + k * 1.1, 0.9, 2.2, 1.0, 0x90a4ae);
+  // tableros
+  for (let k = 0; k < 3; k++) c.metal.add(w / 2 - 0.8, F, -2 + k * 1.3, 0.6, 2.0, 1.1, 0xb0bec5);
+  // planta de emergencia
+  c.box.add(0, F, d / 2 - 4.2, 7, 2.3, 2.2, 0xf2b705);
+  c.box.add(2.6, F + 2.3, d / 2 - 4.2, 0.5, 1.2, 0.5, 0x37474f);
+  c.paint.add(0, F + 0.01, 0.5, w - 3, 0.01, 0.15, 0xf2d24b);
+  c.person(-2, 1.5);
+  c.stats.transformadores = 2;
+  c.label('Transformadores', 0, -d / 2 + 4, 4);
+  c.label('Planta de emergencia', 0, d / 2 - 4, 3.5);
+}
+
+function reciclaje(c, { w, d }) {
+  // banda de separación con operarios
+  c.metal.add(-4, F, -1, 22, 0.9, 1.2, 0x78909c);
+  c.box.add(-4, F + 0.9, -1, 22, 0.08, 1.0, 0x263238);
+  for (let k = 0; k < 14; k++) c.box.add(-14 + k * 1.5 + c.r() * 0.6, F + 0.98, -1 + (c.r() - 0.5) * 0.6, 0.5, 0.25, 0.4, pick(c.r, [0x8d6e63, 0x42a5f5, 0xeceff1, 0x66bb6a, 0xffca28]));
+  c.metal.add(-16, F, -1, 3, 2.6, 2.4, 0x546e7a); // tolva de alimentación
+  for (let k = 0; k < 7; k++) { c.person(-12 + k * 2.8, 0.3); if (k % 2) c.person(-12 + k * 2.8, -2.4); }
+  // contenedores por material contra el muro del fondo
+  const cols = [[0x1565c0, 'Plástico'], [0x6d4c41, 'Cartón'], [0x2e7d32, 'Vidrio'], [0x9e9e9e, 'Metales'], [0xf9a825, 'Papel'], [0x37474f, 'Rechazo']];
+  cols.forEach(([col], i) => c.box.add(-w / 2 + 3.5 + i * 4.6, F, -d / 2 + 2.2, 3.6, 1.7, 2.6, col));
+  // compactadora y pacas
+  c.box.add(w / 2 - 5, F, -d / 2 + 3, 4, 2.6, 2.4, 0x1e5aa8);
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) for (let k = 0; k < 2; k++) {
+    c.box.add(w / 2 - 8 + i * 1.3, F + k * 1.05, 2 + j * 1.6, 1.15, 1.0, 1.4, pick(c.r, [0xa1887f, 0x8d6e63, 0x90caf9, 0xcfd8dc]));
+  }
+  c.forklift(w / 2 - 6, 6, -Math.PI / 2);
+  c.stats.contenedores = cols.length;
+  c.label('Banda de separación', -4, -1, 4);
+  c.label('Contenedores por material', -w / 2 + 14, -d / 2 + 2, 4);
+  c.label('Compactadora y pacas', w / 2 - 6, 1, 4);
+}
+
+function compostaje(c, { w, d }) {
+  const n = 6, bw = (w - 6) / n;
+  for (let i = 0; i < n; i++) {
+    const x = -w / 2 + 1 + bw * (i + 0.5);
+    c.box.add(x - bw / 2, F, -d / 2 + 6.5, 0.35, 1.8, 12, 0xb5b1a7);
+    c.box.add(x, F + 0.0, -d / 2 + 6.5, bw - 0.8, 0.9 + (i % 3) * 0.35, 10.5, [0x5a4128, 0x6b4f2f, 0x4b3621][i % 3]);
+    c.box.add(x, F + 1.0 + (i % 3) * 0.35, -d / 2 + 6.5, bw - 1.8, 0.5, 8, [0x4e3a24, 0x5d4430, 0x3f2d1c][i % 3]);
+  }
+  c.box.add(-w / 2 + 1 + bw * n, F, -d / 2 + 6.5, 0.35, 1.8, 12, 0xb5b1a7);
+  // compost maduro, tamiz y bultos
+  c.box.add(w / 2 - 4, F, -2, 4, 1.2, 6, 0x3e2b1b);
+  c.metal.add(w / 2 - 4, F, 4, 3, 2.2, 2, 0x8d969e);
+  for (let k = 0; k < 6; k++) { const y = c.pallet(w / 2 - 9 + (k % 3) * 1.4, 5 + ((k / 3) | 0) * 1.2); c.box.add(w / 2 - 9 + (k % 3) * 1.4, y, 5 + ((k / 3) | 0) * 1.2, 1.1, 0.7, 0.9, 0x2e7d32); }
+  c.forklift(-6, 5, Math.PI / 2);
+  c.person(-2, 4); c.person(8, 2);
+  c.stats.bahias = n;
+  c.label('Bahías de compostaje', -6, -d / 2 + 6, 3.5);
+  c.label('Compost maduro y empaque', w / 2 - 6, 2, 3.5);
+}
+
+function tanques(c, { w, d }) {
+  const tank = (x, col, label) => {
+    c.cyl.add(x, F, -1, 10, 8.5, 10, col);
+    c.cyl.add(x, F + 8.5, -1, 9.2, 0.5, 9.2, 0xdfe6ea);
+    c.metal.add(x + 5.1, F, -1, 0.3, 9.2, 0.6, 0x7a8086);
+    c.label(label, x, -1, 11);
+  };
+  tank(-11, 0x3d6f9a, 'Agua potable');
+  tank(1, 0xb0413e, 'Red contra incendios');
+  c.box.add(w / 2 - 5, F, -2, 6, 3.2, 7, 0xe8e6e0);
+  c.box.add(w / 2 - 5, F + 3.2, -2, 6.6, 0.3, 7.6, 0x6e7479);
+  c.metal.add(-4, F + 1, 6.5, 22, 0.35, 0.35, 0x1e5aa8);
+  c.metal.add(2, F + 1.6, 7.3, 22, 0.35, 0.35, 0xc0392b);
+  c.stats.tanques = 2;
+  c.label('Cuarto de bombas', w / 2 - 5, -2, 5);
 }

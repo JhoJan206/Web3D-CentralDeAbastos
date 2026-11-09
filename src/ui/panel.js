@@ -85,6 +85,10 @@ export function renderCard(b, { onBack, onRoof } = {}) {
   if (s.racks) extra.push(['Líneas de rack', s.racks]);
   if (s.carriles) extra.push(['Carriles de despacho', s.carriles]);
   if (s.recintos) extra.push(['Recintos', s.recintos]);
+  if (s.transformadores) extra.push(['Transformadores', s.transformadores]);
+  if (s.contenedores) extra.push(['Contenedores', s.contenedores]);
+  if (s.bahias) extra.push(['Bahías de compost', s.bahias]);
+  if (s.tanques) extra.push(['Tanques', s.tanques]);
   const docks = b.docks.length;
   card.innerHTML = `
     <button class="close" aria-label="Cerrar">✕</button>
@@ -95,7 +99,7 @@ export function renderCard(b, { onBack, onRoof } = {}) {
     <div class="kpis">
       <div class="kpi"><b>${d.w} × ${d.d} m</b><span>Planta</span></div>
       <div class="kpi"><b>${area.toLocaleString('es-CO')} m²</b><span>Área${d.floors ? ` (${d.floors} pisos)` : ''}</span></div>
-      <div class="kpi"><b>${d.type === 'gable' ? `${d.eave} / ${d.ridge} m` : `${d.eave} m`}</b><span>${d.type === 'gable' ? 'Alero / cumbrera' : 'Altura'}</span></div>
+      <div class="kpi"><b>${d.type === 'gable' ? `${d.eave} / ${d.ridge} m` : `${d.eave} m`}</b><span>${d.type === 'gable' ? 'Alero / cumbrera' : d.type === 'service' ? 'Altura de muros' : 'Altura'}</span></div>
       <div class="kpi"><b>${docks || '—'}</b><span>Muelles</span></div>
       ${extra.map(([k, v]) => `<div class="kpi"><b>${v}</b><span>${k}</span></div>`).join('')}
     </div>
@@ -103,11 +107,12 @@ export function renderCard(b, { onBack, onRoof } = {}) {
     <ul>${d.zones.map((z) => `<li>${esc(z)}</li>`).join('')}</ul>
     <h3>Rubro presupuestal</h3>
     <div class="budget-row"><div class="top"><span>${esc(ref.rubro)}</span><span>${fmtM(ref.value)}</span></div></div>
-    <button class="roofbtn">Poner / quitar cubierta</button>
+    ${d.type !== 'service' || d.roofed ? '<button class="roofbtn">Poner / quitar cubierta</button>' : ''}
     <button class="back"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></svg>Volver al conjunto</button>`;
   card.querySelector('.back').onclick = onBack;
   card.querySelector('.close').onclick = onBack;
-  card.querySelector('.roofbtn').onclick = onRoof;
+  const rb = card.querySelector('.roofbtn');
+  if (rb) rb.onclick = onRoof;
   card.scrollTop = 0;
   card.classList.add('open');
 }

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { MAT, layer, LAYER } from './materials.js';
 import { Batch, flatShape, flatMesh, roundedRectShape, slabMesh, boxGeo, mesh, rng } from './utils.js';
 import {
-  SITE, FRONT, toUV, fromUV, backEdgeZ, HIGHWAY, ENTRANCES, ROADS, PARKING, SERVICE_ZONES, SERVICE_Z, BUILDINGS,
+  SITE, FRONT, toUV, fromUV, backEdgeZ, HIGHWAY, ENTRANCES, ROADS, PARKING, BUILDINGS,
 } from '../data/layout.js';
 
 const smooth = (a, b, x) => {
@@ -42,6 +42,8 @@ function edgeLoop(points, fn) {
 }
 
 const W = 0xf2f2ee, Y = 0xe8b923;
+const GRASS_LAYER = 12;
+let GRASS;
 const paintMesh = (batch) => {
   const m = batch.build({ cast: false });
   m.material = layer(MAT.paint, LAYER.paint);
@@ -131,6 +133,7 @@ const sampleLine = (x0, z0, x1, z1, step = 2) => {
 };
 
 export function buildSite(scene) {
+  GRASS = layer(MAT.grass, GRASS_LAYER);
   const group = new THREE.Group();
   group.name = 'site';
   const labels = [];
@@ -248,7 +251,7 @@ export function buildSite(scene) {
   const barrierMat = new THREE.MeshStandardMaterial({ color: 0xd8382b, roughness: 0.5 });
   for (const e of ENTRANCES) {
     hw.add(flatMesh(roundedRectShape(e.u - e.width / 2, -10, e.u + e.width / 2, aux.v0 + 0.2, 1), layer(MAT.asphalt, LAYER.connector), 0.055));
-    hw.add(slabMesh(roundedRectShape(e.u - 0.8, -8, e.u + 0.8, -1, 0.8), MAT.curb, 0.25, 0.05));
+    hw.add(slabMesh(roundedRectShape(e.u - 0.8, -8, e.u + 0.8, -1, 0.8), layer(MAT.curb, LAYER.island), 0.25, 0.05));
     const gh = mesh(boxGeo(3.2, 3, 3.2), MAT.wall);
     gh.position.set(e.u + e.width / 2 + 3, 1.5, -5);
     hw.add(gh);
@@ -310,9 +313,9 @@ export function buildSite(scene) {
   vp.add((uA + uB) / 2, 0.07, vA, uB - uA, 0.02, 0.12, W);
   hw.add(paintMesh(vp));
   // isla verde redondeada junto a la entrada general (lado del parqueadero)
-  hw.add(slabMesh(roundedRectShape(ENTRANCES[0].u - ENTRANCES[0].width / 2 - 4.5, vA - 0.5, ENTRANCES[0].u - ENTRANCES[0].width / 2 - 0.6, -2, 2), MAT.grass, 0.2, 0.05));
+  hw.add(slabMesh(roundedRectShape(ENTRANCES[0].u - ENTRANCES[0].width / 2 - 4.5, vA - 0.5, ENTRANCES[0].u - ENTRANCES[0].width / 2 - 0.6, -2, 2), GRASS, 0.2, 0.05));
   // isla verde a la derecha de la entrada de carga (plano)
-  hw.add(slabMesh(roundedRectShape(ENTRANCES[1].u + ENTRANCES[1].width / 2 + 0.6, -11, ENTRANCES[1].u + ENTRANCES[1].width / 2 + 10, -1.5, 2.5), MAT.grass, 0.2, 0.05));
+  hw.add(slabMesh(roundedRectShape(ENTRANCES[1].u + ENTRANCES[1].width / 2 + 0.6, -11, ENTRANCES[1].u + ENTRANCES[1].width / 2 + 10, -1.5, 2.5), GRASS, 0.2, 0.05));
   // paso peatonal desde el acceso del P1 cruzando la vía perimetral
   for (let k = -2; k <= 2; k++) paint.add(P1X + k * 1.1, 0.07, ROADS.front.z, 0.55, 0.02, ROADS.front.width - 1.2, W);
   // flechas de circulación
@@ -345,22 +348,27 @@ export function buildSite(scene) {
   }
   hw.add(paintMesh(tp));
   // islas redondeadas solo en los extremos (junto a las entradas)
-  hw.add(slabMesh(roundedRectShape(T.u0 - 6, T.v0, T.u0 - 0.8, -2, 2), MAT.grass, 0.2, 0.05));
-  hw.add(slabMesh(roundedRectShape(T.u1 + 0.8, T.v0, T.u1 + 6, -2, 2), MAT.grass, 0.2, 0.05));
+  hw.add(slabMesh(roundedRectShape(T.u0 - 6, T.v0, T.u0 - 0.8, -2, 2), GRASS, 0.2, 0.05));
+  hw.add(slabMesh(roundedRectShape(T.u1 + 0.8, T.v0, T.u1 + 6, -2, 2), GRASS, 0.2, 0.05));
   {
     const [lx, lz] = fromUV((T.u0 + T.u1) / 2 - 15, T.v0 - 4);
     labels.push({ text: 'Parqueadero de camiones en espera', pos: [lx, 3, lz], cls: 'zone' });
   }
 
   // ---------- Zonas verdes según plano ----------
+  // (según la maqueta: jardín grande detrás del Administrativo hasta el costado del P4, jardín al frente,
+  //  y franjas junto a los muelles del P4)
   const greens = [
-    [74.5, -56, 79, 62], [82, -56, 86, 62], // pasillo verde P3 – Administrativo
-    [88, -55, 108, -40.5], [88, 46.5, 108, 64], // jardines del administrativo
-    [131, 37, 151.5, 66], // esquina de P4
+    [78.5, -74, 101.4, -38.6, 4], // detrás del Administrativo
+    [76.8, 44.8, 99.8, 60, 3], // frente del Administrativo
+    [127, -66.5, 134, -54.3, 2], // P4: costado de los muelles traseros
+    [127, 20.1, 134, 31, 2], // P4: costado de los muelles frontales
   ];
-  greens.forEach(([a, b, c, d]) => group.add(slabMesh(roundedRectShape(a, b, c, d, 2.2), MAT.grass, 0.2, 0.04)));
-  group.add(slabMesh(roundedRectShape(79.2, -56, 81.8, 62, 0.5), MAT.concrete, 0.12, 0.04));
-  labels.push({ text: 'Paseo peatonal', pos: [80.5, 2, 20], cls: 'zone small' });
+  greens.forEach(([a, b, c, d, rr]) => group.add(slabMesh(roundedRectShape(a, b, c, d, rr), GRASS, 0.2, 0.04)));
+  // vía peatonal entre el Pabellón 3 y el Administrativo (sin zona verde)
+  group.add(slabMesh(roundedRectShape(74.2, -74.5, 78.6, 72.5, 0.6), layer(MAT.concrete, LAYER.island), 0.12, 0.04));
+  for (const zc of [-71, 69.5]) for (let k = -1; k <= 1; k++) paint.add(76.4 + k * 1.2, 0.07, zc + (zc < 0 ? -9 : 9), 0.6, 0.02, 8.4, W);
+  labels.push({ text: 'Vía peatonal', pos: [76.4, 2, 10], cls: 'zone small' });
 
   // Báscula camionera junto a la entrada de carga
   const scale = mesh(boxGeo(18, 0.3, 3.6), MAT.metal);
@@ -392,8 +400,6 @@ export function buildSite(scene) {
   group.add(posts.build());
   labels.push({ text: 'Ladera y aislamiento ambiental', pos: [-70, 10, -122], cls: 'zone' });
 
-  // ---------- Zona de servicios (fondo derecho) ----------
-  buildServices(group, labels);
 
   // ---------- Iluminación ----------
   const poles = new Batch(MAT.metal);
@@ -452,9 +458,7 @@ export function buildSite(scene) {
     }
   });
   islands.forEach(([x, z]) => { addTree(x, z - 3, 0.75); addTree(x, z + 3, 0.75); });
-  for (let z = -48; z <= 56; z += 13) { addTree(76.7, z, 0.6); addTree(84, z + 6, 0.6); }
-  for (let x = 92; x <= 104; x += 6) { addTree(x, 58, 0.6); addTree(x, -47, 0.6); }
-  addTree(140, 52, 0.8); addTree(148, 44, 0.7);
+  for (let x = 82; x <= 97; x += 7.5) { addTree(x, 55, 0.6); addTree(x, -62, 0.7); }
   group.add(buildTrees(trees));
 
   scene.add(group);
@@ -479,82 +483,4 @@ function buildTrees(list) {
   g.add(trunks.build());
   g.add(crowns.build());
   return g;
-}
-
-function buildServices(group, labels) {
-  const z0 = SERVICE_Z.z0, z1 = SERVICE_Z.z1, zc = (z0 + z1) / 2;
-  const b = new Batch(MAT.generic);
-  const m = new Batch(MAT.metal);
-  for (const zn of SERVICE_ZONES) {
-    group.add(slabMesh(roundedRectShape(zn.x0, z0, zn.x1, z1, 1.5), MAT.concrete, 0.15, 0.04));
-    labels.push({ text: zn.label, pos: [(zn.x0 + zn.x1) / 2, 8, zc], cls: 'zone small' });
-  }
-  const Z = Object.fromEntries(SERVICE_ZONES.map((z) => [z.id, z]));
-
-  // Subestación eléctrica y planta de emergencia
-  {
-    const zn = Z.sub, xm = (zn.x0 + zn.x1) / 2;
-    for (let i = 0; i < 3; i++) {
-      b.add(zn.x0 + 3.5 + i * 5, 0.2, zc - 4, 3.2, 2.8, 2.6, 0x6f7f6a);
-      m.add(zn.x0 + 3.5 + i * 5, 3.0, zc - 4, 0.25, 1.4, 0.25, 0x9aa0a6);
-    }
-    b.add(xm, 0.2, zc + 4, 12, 2.9, 2.6, 0xe4e2dc);
-    b.add(xm + 4, 3.1, zc + 4, 1, 1.2, 1, 0x555a5f);
-    b.add(xm, 0.2, z0 + 1, zn.x1 - zn.x0 - 2, 2.2, 0.06, 0x58625a);
-    b.add(xm, 0.2, z1 - 1, zn.x1 - zn.x0 - 2, 2.2, 0.06, 0x58625a);
-  }
-  // Paneles solares
-  {
-    const zn = Z.solar;
-    for (let k = 0; k < 4; k++) {
-      const z = z0 + 3 + k * 4.4;
-      const p = mesh(boxGeo(zn.x1 - zn.x0 - 3, 0.08, 2.8), MAT.solar);
-      p.position.set((zn.x0 + zn.x1) / 2, 1.5, z);
-      p.rotation.x = -0.32;
-      group.add(p);
-      for (let x = zn.x0 + 2.5; x < zn.x1 - 1; x += 6) m.add(x, 0.2, z, 0.12, 1.3, 0.12, 0x9aa0a6);
-    }
-  }
-  // Residuos y compostaje
-  {
-    const zn = Z.waste;
-    for (let i = 0; i < 4; i++) {
-      const x = zn.x0 + 5 + i * 6.5;
-      b.add(x - 3.25, 0.2, zc - 2, 0.35, 1.8, 10, 0xb5b1a7);
-      b.add(x, 0.2, zc - 6.9, 6.5, 1.8, 0.35, 0xb5b1a7);
-      b.add(x, 0.2, zc - 2, 5.4, 1.1 + (i % 3) * 0.25, 8.5, [0x5a4128, 0x6b4f2f, 0x4b3621][i % 3]);
-    }
-    b.add(zn.x0 + 5 + 4 * 6.5 - 3.25, 0.2, zc - 2, 0.35, 1.8, 10, 0xb5b1a7);
-    const roof = mesh(boxGeo(28, 0.15, 13), MAT.roof);
-    roof.position.set(zn.x0 + 14.5, 6, zc - 2);
-    roof.rotation.x = 0.06;
-    group.add(roof);
-    for (let x = zn.x0 + 1.5; x <= zn.x0 + 28; x += 6.5) {
-      m.add(x, 0.2, zc - 8, 0.25, 5.6, 0.25, 0x8a9096);
-      m.add(x, 0.2, zc + 4, 0.25, 6.2, 0.25, 0x8a9096);
-    }
-    const cols = [0x2e7d32, 0x1565c0, 0x9e9e9e, 0xf9a825, 0x6d4c41, 0x2e7d32];
-    cols.forEach((c, i) => b.add(zn.x1 - 10 + (i % 3) * 3.4, 0.2, zc + (i < 3 ? -5 : 2), 2.8, 1.6, 2.2, c));
-  }
-  // Tanques de agua potable y contra incendios
-  {
-    const zn = Z.tanks;
-    const tankGeo = new THREE.CylinderGeometry(5.5, 5.5, 9, 32).translate(0, 4.5, 0);
-    const domeGeo = new THREE.SphereGeometry(5.5, 32, 8, 0, Math.PI * 2, 0, Math.PI / 6).translate(0, 9 - 4.76, 0);
-    const tankMat = new THREE.MeshStandardMaterial({ color: 0xc7d3da, roughness: 0.35, metalness: 0.55 });
-    const blue = new THREE.MeshStandardMaterial({ color: 0x3d6f9a, roughness: 0.4, metalness: 0.4 });
-    [[zn.x0 + 7.5, zc], [zn.x0 + 20, zc]].forEach(([x, z], i) => {
-      for (const g of [tankGeo, domeGeo]) {
-        const t = mesh(g, i ? tankMat : blue);
-        t.position.set(x, 0.2, z);
-        group.add(t);
-      }
-      m.add(x + 5.4, 0.2, z, 0.3, 9.6, 0.6, 0x7a8086);
-    });
-    b.add(zn.x1 - 4.5, 0.2, zc, 7, 3.4, 7, 0xe8e6e0);
-    b.add(zn.x1 - 4.5, 3.6, zc, 7.6, 0.3, 7.6, 0x6e7479);
-    m.add(zn.x0 + 14, 1.2, zc + 7, 26, 0.35, 0.35, 0xc0392b);
-  }
-  group.add(b.build());
-  group.add(m.build());
 }

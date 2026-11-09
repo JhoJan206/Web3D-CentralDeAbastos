@@ -31,7 +31,7 @@ export function initMaterials() {
     wall: std({ map: wallTex(), roughness: 0.75, color: 0xffffff }),
     plinth: std({ color: 0x9c9a94, roughness: 0.9 }),
     roof: std({ map: roofTex(), roughness: 0.38, metalness: 0.65, color: 0xffffff, envMapIntensity: 1.0 }),
-    skylight: std({ color: 0xe8f2f7, roughness: 0.25, metalness: 0.0, transparent: true, opacity: 0.88, emissive: 0x889aa3, emissiveIntensity: 0.15 }),
+    skylight: std({ color: 0xeef6fa, roughness: 0.15, metalness: 0.0, transparent: true, opacity: 0.62, emissive: 0x9fb4be, emissiveIntensity: 0.18, depthWrite: false }),
     glass: std({ color: 0x1b2730, roughness: 0.12, metalness: 0.6, envMapIntensity: 1.3 }),
     door: std({ color: 0x5d646b, roughness: 0.55, metalness: 0.5 }),
     paint: std({ color: 0xffffff, roughness: 0.8 }), // líneas de demarcación (color por instancia)

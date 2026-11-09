@@ -17,7 +17,7 @@ export const KPIS = [
   { value: '100 %', label: 'Proyecto y maqueta terminados', bar: 100 },
   { value: '4 + 1', label: 'Pabellones + administrativo' },
   { value: '6,4 ha', label: 'Área del predio' },
-  { value: '≈ 25.000 m²', label: 'Área construida' },
+  { value: '≈ 23.700 m²', label: 'Área construida (pabellones y administrativo)' },
   { value: '320 m', label: 'Frente a la autopista' },
   { value: '38', label: 'Muelles de carga' },
   { value: '5 / 5', label: 'Hitos entregados' },

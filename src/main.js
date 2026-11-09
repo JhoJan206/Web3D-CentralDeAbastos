@@ -111,7 +111,7 @@ for (const b of buildings) {
   o.center.set(0.5, 1);
 
   // el administrativo es angosto: su etiqueta va sobre su extremo frontal para no tapar la del P4
-  o.position.set(b.data.cx, b.data.ridge + 1, b.data.id === 'admin' ? b.data.cz + b.data.d / 2 - 8 : b.data.cz);
+  o.position.set(b.data.cx, b.data.type === 'service' ? 10.5 : b.data.ridge + 1, b.data.id === 'admin' ? b.data.cz + b.data.d / 2 - 8 : b.data.cz);
   scene.add(o);
   b.label = o;
 
@@ -346,11 +346,11 @@ function updateRoof(b, dt) {
     m.opacity = base * op;
     const tr = t > 0 || base < 1;
     if (m.transparent !== tr) { m.transparent = tr; m.needsUpdate = true; }
-    m.depthWrite = t < 0.05;
+    m.depthWrite = t < 0.05 && base >= 1; // los tragaluces translúcidos nunca escriben profundidad
   }
   b.roof.visible = t < 0.999;
   b.roof.traverse((o) => { if (o.isMesh) o.castShadow = t < 0.35; });
-  b.interior.visible = t > 0.02;
+  b.interior.visible = t > 0.02 || (b.data.type === 'service' && !b.data.roofed); // recintos sin techo: siempre visibles
 }
 
 // ---------------------------------------------------------------- Bucle

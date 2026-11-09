@@ -5,8 +5,8 @@
 // Polígono del predio [x, z]: frente 320 m, lado derecho 220 m, lado izquierdo ≈ 180 m, fondo ≈ 283 m
 export const SITE = [
   [-158, 120.3], // frente izquierda
-  [172, 86.3], // frente derecha (ampliado para la vía perimetral junto al P4)
-  [172, -140], // fondo derecha
+  [160, 87.5], // frente derecha
+  [160, -138.5], // fondo derecha
   [-150, -100], // fondo izquierda (ampliado para la curva de la vía perimetral)
 ];
 
@@ -49,7 +49,7 @@ export const ROADS = {
   back: { z: -80, width: 10 },
   front: { z: 78, width: 10 }, // pasa por delante del P1 atravesando el parqueadero de visitantes
   left: { x: -138, width: 10 },
-  right: { x: 158, width: 10 },
+  right: { x: 147, width: 10 }, // 8 m al costado del P4
   radius: 24,
   radiusFront: 14,
   radiusFrontLeft: 12, // curva frente a la esquina del P1
@@ -113,8 +113,7 @@ export const BUILDINGS = [
     name: 'Edificio Administrativo',
     subtitle: 'y Servicios',
     type: 'flat',
-    cx: 97.8, cz: 3.2, w: 20, d: 82, eave: 8, ridge: 8,
-    floors: 2,
+    cx: 89, cz: 3.2, w: 20, d: 82, eave: 5, ridge: 5, // un solo piso; separado del P3 solo por un paso peatonal
     docks: { front: 0, back: 0 },
     accent: '#64b5f6',
     description:
@@ -128,7 +127,7 @@ export const BUILDINGS = [
     name: 'Pabellón 4',
     subtitle: 'Suministro Institucional',
     type: 'gable',
-    cx: 132.4, cz: -17.1, w: 30, d: 72, eave: 8, ridge: 12,
+    cx: 118, cz: -17.1, w: 30, d: 72, eave: 8, ridge: 12, // 4 m al costado del Administrativo
     docks: { front: 3, back: 3 },
     accent: '#ba68c8',
     description:
@@ -136,12 +135,62 @@ export const BUILDINGS = [
     zones: ['Zona de picking y alistamiento', 'Pedidos consolidados en estibas', 'Estanterías de almacenamiento', 'Muelles de despacho institucional'],
     budgetRef: 2,
   },
+  // ---- Edificios de servicios: en hilera, pegados entre sí y a la vía perimetral del fondo ----
+  {
+    id: 'sub',
+    short: 'SUB',
+    name: 'Subestación eléctrica',
+    subtitle: 'y planta de emergencia',
+    type: 'service',
+    roofed: true,
+    cx: 27, cz: -95.3, w: 14, d: 20, eave: 5, ridge: 5,
+    docks: { front: 0, back: 0 },
+    gate: 4,
+    accent: '#fdd835',
+    description: 'Recibe la acometida de media tensión y alimenta toda la central. Cuenta con transformadores, celdas de maniobra y una planta eléctrica de emergencia para mantener la cadena de frío.',
+    zones: ['Transformadores de potencia', 'Celdas de media tensión', 'Tableros de distribución', 'Planta eléctrica de emergencia'],
+    budgetRef: 6,
+  },
+  {
+    id: 'rec',
+    short: 'REC',
+    name: 'Separación y reciclaje',
+    subtitle: 'de residuos',
+    type: 'service',
+    cx: 54, cz: -95.3, w: 40, d: 20, eave: 4, ridge: 4,
+    docks: { front: 0, back: 0 },
+    gate: 8,
+    accent: '#26a69a',
+    description: 'Recibe los residuos de los pabellones y los separa por tipo: cartón, plástico, vidrio y metales se compactan en pacas para su venta a recicladores; lo orgánico pasa a compostaje.',
+    zones: ['Banda de separación manual', 'Compactadora de pacas', 'Contenedores por tipo de material', 'Patio de maniobra de camiones'],
+    budgetRef: 1,
+  },
+  {
+    id: 'com',
+    short: 'COM',
+    name: 'Compostaje',
+    subtitle: 'Residuos orgánicos',
+    type: 'service',
+    cx: 95, cz: -95.3, w: 42, d: 20, eave: 3, ridge: 3,
+    docks: { front: 0, back: 0 },
+    gate: 8,
+    accent: '#8d6e63',
+    description: 'Transforma los residuos orgánicos de frutas y verduras en abono. Las pilas se voltean periódicamente hasta obtener compost maduro, que se tamiza y empaca.',
+    zones: ['Bahías de compostaje', 'Pilas en maduración', 'Zona de tamizado y empaque'],
+    budgetRef: 1,
+  },
+  {
+    id: 'tan',
+    short: 'TAN',
+    name: 'Tanques de agua',
+    subtitle: 'Potable y contra incendios',
+    type: 'service',
+    cx: 133, cz: -95.3, w: 34, d: 20, eave: 3, ridge: 3,
+    docks: { front: 0, back: 0 },
+    gate: 6,
+    accent: '#42a5f5',
+    description: 'Reserva de agua potable para toda la central y reserva exclusiva para la red contra incendios, con su cuarto de bombas.',
+    zones: ['Tanque de agua potable', 'Tanque de la red contra incendios', 'Cuarto de bombas'],
+    budgetRef: 6,
+  },
 ];
-
-export const SERVICE_ZONES = [
-  { id: 'sub', label: 'Subestación', x0: 19, x1: 38 },
-  { id: 'solar', label: 'Paneles solares', x0: 42, x1: 74 },
-  { id: 'waste', label: 'Residuos y compostaje', x0: 77, x1: 119 },
-  { id: 'tanks', label: 'Tanques de agua', x0: 123, x1: 158 },
-];
-export const SERVICE_Z = { z0: -107, z1: -88 };

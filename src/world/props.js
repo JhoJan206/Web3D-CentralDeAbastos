@@ -106,7 +106,7 @@ export function buildProps(scene, site, buildings) {
   // Carros sobre la vía perimetral
   vb.add('car', -60, -77.5, 0, 0x1565c0);
   vb.add('truck', 40, 79, Math.PI, 0xf2f2f2, 0xffffff);
-  vb.add('car', 156, 10, Math.PI / 2, 0xd32f2f);
+  vb.add('car', 149, 10, Math.PI / 2, 0xd32f2f);
   vb.add('mula', -48.4, 40, -Math.PI / 2, 0x1565c0, 0xeeeeee); // subiendo por la vía P1 – P2
   vb.add('truck', 23.9, -30, Math.PI / 2, 0xef6c00, 0xffffff); // vía P2 – P3
   vb.build(group);
