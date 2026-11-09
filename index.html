@@ -24,12 +24,12 @@
       </div>
     </header>
 
-    <button id="toggleInfo" class="pill" aria-expanded="true">
+    <button id="toggleInfo" class="pill" aria-expanded="false">
       <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M4 5h16v2H4zm0 6h16v2H4zm0 6h10v2H4z"/></svg>
-      <span>Datos del proyecto</span>
+      <span>Datos del proyecto</span><em class="badge">100%</em>
     </button>
 
-    <aside id="info" class="panel open" aria-label="Datos del proyecto">
+    <aside id="info" class="panel" aria-label="Datos del proyecto">
       <nav class="tabs" role="tablist"></nav>
       <div class="tab-body"></div>
     </aside>
@@ -64,7 +64,7 @@
 
     <div id="loader">
       <div class="spin"></div>
-      <p>Construyendo la central de abastos…</p>
+      <p>Cargando la central de abastos…</p>
     </div>
 
     <script type="module" src="/src/main.js"></script>

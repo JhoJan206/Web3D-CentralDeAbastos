@@ -29,7 +29,7 @@ const labelRenderer = new CSS2DRenderer({ element: document.getElementById('labe
 labelRenderer.setSize(window.innerWidth, window.innerHeight);
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 1, 5000);
+const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 4, 5000);
 
 // ---------------------------------------------------------------- Cielo, sol y entorno
 const sun = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - 42), THREE.MathUtils.degToRad(215));
@@ -109,8 +109,9 @@ for (const b of buildings) {
   el.addEventListener('pointerleave', () => setHover(null));
   const o = new CSS2DObject(el);
   o.center.set(0.5, 1);
-  if (b.data.id === 'admin') el.querySelector('.stem').style.height = '54px';
-  o.position.set(b.data.cx, b.data.ridge + 1, b.data.cz);
+
+  // el administrativo es angosto: su etiqueta va sobre su extremo frontal para no tapar la del P4
+  o.position.set(b.data.cx, b.data.ridge + 1, b.data.id === 'admin' ? b.data.cz + b.data.d / 2 - 8 : b.data.cz);
   scene.add(o);
   b.label = o;
 
@@ -144,7 +145,7 @@ controls.keyPanSpeed = 25;
 
 let infoWasOpen = false;
 const VIEWS = {
-  overview: { pos: new THREE.Vector3(-90, 300, 400), target: new THREE.Vector3(5, 0, -5) },
+  overview: { pos: new THREE.Vector3(-60, 235, 315), target: new THREE.Vector3(5, 0, 0) },
   top: { pos: new THREE.Vector3(5, 560, -4.9), target: new THREE.Vector3(5, 0, -5) },
 };
 function fitView(v) {

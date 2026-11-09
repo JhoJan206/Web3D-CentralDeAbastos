@@ -1,31 +1,66 @@
-// Distribución general. 1 unidad = 1 metro.
-// Ejes: X a lo largo de la autopista (Girón ← → Bucaramanga), Z hacia la autopista (+Z = frente), Y arriba.
+// Distribución general tomada del plano acotado. 1 unidad = 1 metro.
+// Ejes alineados con los edificios del plano: X hacia la derecha (Bucaramanga), Z hacia la autopista, Y arriba.
+// El lindero frontal y la autopista quedan en diagonal, igual que en el plano.
 
-// Polígono del predio [x, z] (frente 320 m sobre la autopista, lado derecho 220 m, fondo inclinado)
+// Polígono del predio [x, z]: frente 320 m, lado derecho 220 m, lado izquierdo ≈ 180 m, fondo ≈ 283 m
 export const SITE = [
-  [-160, 105],
-  [160, 105],
-  [160, -150],
-  [-150, -125],
+  [-158, 120.3], // frente izquierda
+  [172, 86.3], // frente derecha (ampliado para la vía perimetral junto al P4)
+  [172, -140], // fondo derecha
+  [-150, -100], // fondo izquierda (ampliado para la curva de la vía perimetral)
 ];
 
-// Línea de fondo del predio: z en función de x
-export const backEdgeZ = (x) => -125 - (25 * (x + 150)) / 310;
-
-export const HIGHWAY = {
-  near: { z0: 113, z1: 127, dir: 1 }, // calzada hacia Bucaramanga
-  median: { z0: 127, z1: 132 },
-  far: { z0: 132, z1: 146, dir: -1 }, // calzada hacia Girón
+// Lindero frontal (sobre la autopista)
+export const FRONT = { ox: 2, oz: 103.8, angle: Math.atan2(33, 320) };
+export const frontZ = (x) => 120.3 - (33 / 320) * (x + 158);
+// Coordenada u (a lo largo de la vía) y v (perpendicular, positiva hacia la autopista)
+export const toUV = (x, z) => {
+  const c = Math.cos(FRONT.angle), s = Math.sin(FRONT.angle);
+  const dx = x - FRONT.ox, dz = z - FRONT.oz;
+  return [dx * c - dz * s, dx * s + dz * c];
+};
+export const fromUV = (u, v) => {
+  const c = Math.cos(FRONT.angle), s = Math.sin(FRONT.angle);
+  return [FRONT.ox + u * c + v * s, FRONT.oz - u * s + v * c];
 };
 
+// Lindero del fondo (ladera)
+export const backEdgeZ = (x) => -100 - (40 / 322) * (x + 150);
+
+// Autopista Girón – Bucaramanga (coordenada v desde el lindero frontal)
+// 2 carriles por sentido; la calzada cercana gana un 3.er carril frente a los accesos.
+export const HIGHWAY = {
+  near: { v0: 4, v1: 12, dir: 1 }, // hacia Bucaramanga
+  median: { v0: 12, v1: 15.5 },
+  far: { v0: 15.5, v1: 23.5, dir: -1 }, // hacia Girón
+  aux: { v0: 0.6, v1: 4, u0: -125, u1: 160, taper: 40 }, // carril de aceleración / desaceleración
+  lane: 3.5,
+};
+
+// Accesos sobre el lindero frontal (u a lo largo de la vía)
 export const ENTRANCES = [
-  { id: 'general', label: 'Entrada general (vehículos)', x: -22, width: 18 },
-  { id: 'carga', label: 'Entrada de carga (tractomulas)', x: 124, width: 20 },
+  { id: 'general', label: 'Entrada general (vehículos)', u: -51.7, width: 16 },
+  { id: 'carga', label: 'Entrada de carga (tractomulas)', u: 86.4, width: 18 },
 ];
 
+// Vías internas (ejes)
+export const ROADS = {
+  // anillo perimetral con esquinas redondeadas (izquierda → fondo → derecha → frente)
+  back: { z: -80, width: 10 },
+  front: { z: 78, width: 10 }, // pasa por delante del P1 atravesando el parqueadero de visitantes
+  left: { x: -138, width: 10 },
+  right: { x: 158, width: 10 },
+  radius: 24,
+  radiusFront: 14,
+  radiusFrontLeft: 12, // curva frente a la esquina del P1
+  p1p2: { x: -50.4, z0: -80, z1: 110, width: 8 }, // vía entre Pabellón 1 y 2 (llega a la entrada general)
+  p2p3: { x: 25.9, z0: -80, z1: 76, width: 8 }, // vía entre Pabellón 2 y 3
+};
+
 export const PARKING = {
-  visitors: { x0: -148, x1: -40, z0: 58, z1: 98 },
-  trucks: { x0: 2, x1: 104, z0: 64, z1: 98 },
+  visitors: { x0: -150, x1: -55 }, // entre la vía perimetral frontal y el lindero, frente al Pabellón 1
+  // bahía de camiones en espera, en coordenadas de la autopista (u a lo largo, v hacia la vía; negativo = dentro del predio)
+  trucks: { u0: -36, u1: 69, v0: -12.6, v1: -6.2 },
 };
 
 export const BUILDINGS = [
@@ -35,7 +70,7 @@ export const BUILDINGS = [
     name: 'Pabellón 1',
     subtitle: 'Frutas y Verduras',
     type: 'gable',
-    cx: -96.5, cz: -21, w: 75, d: 122, eave: 11, ridge: 17,
+    cx: -92.5, cz: 2.5, w: 75, d: 122, eave: 11, ridge: 17,
     docks: { front: 0, back: 8 },
     publicFront: true,
     accent: '#7cb342',
@@ -50,7 +85,7 @@ export const BUILDINGS = [
     name: 'Pabellón 2',
     subtitle: 'Carne y Lácteos',
     type: 'gable',
-    cx: -16.5, cz: -15, w: 65, d: 102, eave: 10, ridge: 15,
+    cx: -13.3, cz: -5.1, w: 65, d: 102, eave: 10, ridge: 15,
     docks: { front: 7, back: 7 },
     accent: '#e57373',
     description:
@@ -64,7 +99,7 @@ export const BUILDINGS = [
     name: 'Pabellón 3',
     subtitle: 'Granos y Abarrotes',
     type: 'gable',
-    cx: 46, cz: -15, w: 40, d: 102, eave: 9, ridge: 13,
+    cx: 52.6, cz: -5.1, w: 40, d: 102, eave: 9, ridge: 13,
     docks: { front: 5, back: 5 },
     accent: '#ffb74d',
     description:
@@ -78,7 +113,7 @@ export const BUILDINGS = [
     name: 'Edificio Administrativo',
     subtitle: 'y Servicios',
     type: 'flat',
-    cx: 88, cz: -5, w: 20, d: 82, eave: 8, ridge: 8,
+    cx: 97.8, cz: 3.2, w: 20, d: 82, eave: 8, ridge: 8,
     floors: 2,
     docks: { front: 0, back: 0 },
     accent: '#64b5f6',
@@ -93,8 +128,8 @@ export const BUILDINGS = [
     name: 'Pabellón 4',
     subtitle: 'Suministro Institucional',
     type: 'gable',
-    cx: 125, cz: 0, w: 30, d: 72, eave: 8, ridge: 12,
-    docks: { front: 3, back: 4 },
+    cx: 132.4, cz: -17.1, w: 30, d: 72, eave: 8, ridge: 12,
+    docks: { front: 3, back: 3 },
     accent: '#ba68c8',
     description:
       'Centro de alistamiento y despacho de pedidos para clientes institucionales (colegios, hospitales, comedores). Pedidos consolidados en estibas, zona de picking y muelles directos hacia la entrada de carga.',
@@ -104,9 +139,9 @@ export const BUILDINGS = [
 ];
 
 export const SERVICE_ZONES = [
-  { id: 'sub', label: 'Subestación eléctrica y planta de emergencia', x0: -110, x1: -70 },
-  { id: 'solar', label: 'Paneles solares', x0: -55, x1: 15 },
-  { id: 'waste', label: 'Gestión de residuos y compostaje', x0: 25, x1: 92 },
-  { id: 'tanks', label: 'Tanques de agua potable y contra incendios', x0: 102, x1: 150 },
+  { id: 'sub', label: 'Subestación', x0: 19, x1: 38 },
+  { id: 'solar', label: 'Paneles solares', x0: 42, x1: 74 },
+  { id: 'waste', label: 'Residuos y compostaje', x0: 77, x1: 119 },
+  { id: 'tanks', label: 'Tanques de agua', x0: 123, x1: 158 },
 ];
-export const SERVICE_Z = { z0: -128, z1: -111 };
+export const SERVICE_Z = { z0: -107, z1: -88 };

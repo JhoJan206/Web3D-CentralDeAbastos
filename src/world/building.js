@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { MAT } from './materials.js';
+import { MAT, layer, LAYER } from './materials.js';
 import { Batch, boxGeo, mesh, roundedRectShape, flatMesh, slabMesh } from './utils.js';
 import { buildInterior } from './interiors.js';
 
@@ -25,9 +25,10 @@ export function buildBuilding(data, scene) {
   // ---------- Plataforma de concreto alrededor (andenes y patios de maniobra) ----------
   const dockF = data.docks.front > 0 ? 14 : 4;
   const dockB = data.docks.back > 0 ? 14 : 4;
-  const front = data.publicFront ? 10 : dockF;
-  const apron = roundedRectShape(-w / 2 - 4, -d / 2 - dockB, w / 2 + 4, d / 2 + front, 2);
-  g.add(flatMesh(apron, MAT.concrete, 0.06));
+  const front = data.publicFront ? 1.2 : dockF;
+  // andén lateral angosto: entre pabellones pasan vías vehiculares (plano)
+  const apron = roundedRectShape(-w / 2 - 1.2, -d / 2 - dockB, w / 2 + 1.2, d / 2 + front, 1.2);
+  g.add(flatMesh(apron, layer(MAT.concrete, LAYER.apron), 0.06));
 
   // Zonas verdes laterales junto a los muelles (como en la maqueta)
   const greenPatch = (side, sign) => {
@@ -37,15 +38,18 @@ export function buildBuilding(data, scene) {
     const zEdge = sign * (d / 2);
     const z0 = zEdge + sign * 1.5, z1 = zEdge + sign * 12;
     if (w / 2 - span > 5) {
-      g.add(slabMesh(roundedRectShape(span + 1.5, z0, w / 2 + 3.5, z1, 2.2), MAT.grass, 0.22, 0.07));
-      g.add(slabMesh(roundedRectShape(-w / 2 - 3.5, z0, -span - 1.5, z1, 2.2), MAT.grass, 0.22, 0.07));
+      g.add(slabMesh(roundedRectShape(span + 1.5, z0, w / 2 + 0.8, z1, 2.2), MAT.grass, 0.22, 0.07));
+      g.add(slabMesh(roundedRectShape(-w / 2 - 0.8, z0, -span - 1.5, z1, 2.2), MAT.grass, 0.22, 0.07));
     }
   };
   greenPatch('front', 1);
   greenPatch('back', -1);
   if (data.publicFront) {
-    g.add(slabMesh(roundedRectShape(-w / 2 - 3, d / 2 + 2, -8, d / 2 + 9, 2.5), MAT.grass, 0.22, 0.07));
-    g.add(slabMesh(roundedRectShape(8, d / 2 + 2, w / 2 + 3, d / 2 + 9, 2.5), MAT.grass, 0.22, 0.07));
+    // plazoleta de acceso y jardineras del frente (como las de la maqueta: esquinas y a lado y lado de la puerta)
+    g.add(flatMesh(roundedRectShape(-5.8, d / 2, 5.8, d / 2 + 7.4, 0.8), layer(MAT.concrete, LAYER.apron), 0.06));
+    for (const [a, b] of [[-w / 2 + 0.2, -w / 2 + 2.8], [-8.6, -6], [6, 8.6], [w / 2 - 2.8, w / 2 - 0.2]]) {
+      g.add(slabMesh(roundedRectShape(a, d / 2 + 0.4, b, d / 2 + 7.4, 1.2), MAT.grass, 0.22, 0.07));
+    }
   }
 
   // ---------- Base blanca (zócalo de la maqueta) + piso ----------
@@ -139,10 +143,9 @@ export function buildBuilding(data, scene) {
     }
     if (data.publicFront && side === 'front') {
       glass.add(0, FLOOR, zf + sign * 0.03, 10, 4, 0.1, 0x24333d);
-      misc.add(0, 5.2, zf + sign * 3, 16, 0.3, 6, 0xdedcd6); // marquesina
-      for (const x of [-7.5, 7.5]) misc.add(x, 0, zf + sign * 5.5, 0.3, 5.2, 0.3, 0x9aa0a6);
+      misc.add(0, 5.2, zf + sign * 3, 11.4, 0.3, 6, 0xdedcd6); // marquesina
+      for (const x of [-5.2, 5.2]) misc.add(x, 0, zf + sign * 5.5, 0.3, 5.2, 0.3, 0x9aa0a6);
       // franjas peatonales
-      for (let x = -6; x <= 6; x += 1.2) paint.add(x, 0.09, d / 2 + 16, 0.6, 0.02, 5, 0xf2f2ee);
       continue;
     }
     if (!n) continue;
@@ -223,7 +226,9 @@ export function buildBuilding(data, scene) {
   g.add(glass.build({ cast: false }));
   g.add(dark.build({ cast: false }));
   g.add(misc.build());
-  g.add(paint.build({ cast: false }));
+  const pm = paint.build({ cast: false });
+  pm.material = layer(MAT.paint, LAYER.paint);
+  g.add(pm);
 
   // ---------- Interior ----------
   const interior = buildInterior(data);

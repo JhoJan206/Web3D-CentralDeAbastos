@@ -5,6 +5,22 @@ const std = (o) => new THREE.MeshStandardMaterial(o);
 
 export const MAT = {};
 
+// Capas del suelo: todas las superficies planas casi coplanares (patio, vías, andenes, pintura)
+// usan polygonOffset para que no parpadeen al verlas desde lejos (vista cenital).
+const layerCache = new Map();
+export function layer(mat, k) {
+  const key = mat.uuid + ':' + k;
+  if (!layerCache.has(key)) {
+    const m = mat.clone();
+    m.polygonOffset = true;
+    m.polygonOffsetFactor = -k;
+    m.polygonOffsetUnits = -k * 4;
+    layerCache.set(key, m);
+  }
+  return layerCache.get(key);
+}
+export const LAYER = { yard: 1, lot: 2, road: 3, connector: 4, apron: 5, island: 6, paint: 8 };
+
 export function initMaterials() {
   Object.assign(MAT, {
     asphalt: std({ map: asphaltTex(), roughness: 0.95, metalness: 0 }),

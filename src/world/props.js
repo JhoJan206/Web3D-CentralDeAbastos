@@ -80,17 +80,15 @@ export function buildProps(scene, site, buildings) {
   const vb = new VehicleBatch();
 
   // Carros en el parqueadero de visitantes
-  for (const [x, z, facing] of site.carSpots) {
+  for (const [x, z, ry] of site.carSpots) {
     if (r() < 0.32) continue;
-    const ry = facing > 0 ? Math.PI / 2 : -Math.PI / 2;
     vb.add(r() < 0.08 ? 'taxi' : 'car', x, z, ry + (r() - 0.5) * 0.05, pick(r, CAR_COLORS));
   }
   // Tractomulas y camiones en espera
-  site.truckSpots.forEach(([x, z], i) => {
-    if (r() < 0.4) return;
-    const ry = Math.PI / 2;
+  site.truckSpots.forEach(([x, z, ry]) => {
+    if (r() < 0.3) return;
     if (r() < 0.6) vb.add('mula', x, z, ry, pick(r, [0xc62828, 0x1565c0, 0xf2f2f2, 0x2e7d32, 0xf9a825]), pick(r, [0xeeeeee, 0xdddddd, 0x90a4ae, 0xffffff]));
-    else vb.add('truck', x, z - 3, ry, pick(r, [0xf2f2f2, 0x1565c0, 0xef6c00]), pick(r, [0xffffff, 0xe0e0e0]));
+    else vb.add('truck', x, z, ry, pick(r, [0xf2f2f2, 0x1565c0, 0xef6c00]), pick(r, [0xffffff, 0xe0e0e0]));
   });
   // Camiones en los muelles
   for (const b of buildings) {
@@ -106,30 +104,40 @@ export function buildProps(scene, site, buildings) {
     }
   }
   // Carros sobre la vía perimetral
-  vb.add('car', -60, -104 + 1.8, 0, 0x1565c0);
-  vb.add('truck', 30, 53, Math.PI, 0xf2f2f2, 0xffffff);
-  vb.add('car', 147, 10, Math.PI / 2, 0xd32f2f);
+  vb.add('car', -60, -77.5, 0, 0x1565c0);
+  vb.add('truck', 40, 79, Math.PI, 0xf2f2f2, 0xffffff);
+  vb.add('car', 156, 10, Math.PI / 2, 0xd32f2f);
+  vb.add('mula', -48.4, 40, -Math.PI / 2, 0x1565c0, 0xeeeeee); // subiendo por la vía P1 – P2
+  vb.add('truck', 23.9, -30, Math.PI / 2, 0xef6c00, 0xffffff); // vía P2 – P3
   vb.build(group);
 
-  // Tráfico en la autopista
+  // Tráfico en la autopista (marco local de la vía: x = a lo largo, z = perpendicular)
+  const hw = site.highway;
   const traffic = [];
   for (const cw of [HIGHWAY.near, HIGHWAY.far]) {
-    const lw = (cw.z1 - cw.z0 - 1.2) / 3;
-    for (let lane = 0; lane < 3; lane++) {
-      const z = cw.z0 + 0.6 + lw * (lane + 0.5);
-      const n = 5 + ((r() * 3) | 0);
+    for (let lane = 0; lane < 2; lane++) {
+      const v = cw.v0 + 0.3 + HIGHWAY.lane * (lane + 0.5);
+      const heavy = cw.dir > 0 ? lane === 0 : lane === 1; // carril lento junto a la berma
+      const n = 6 + ((r() * 3) | 0);
       for (let k = 0; k < n; k++) {
         const t = r();
-        const type = lane === 0 && cw.dir < 0 ? (t < 0.5 ? 'mula' : 'truck') : lane === 2 && cw.dir > 0 ? (t < 0.5 ? 'mula' : 'truck') : t < 0.1 ? 'taxi' : t < 0.82 ? 'car' : 'truck';
+        const type = heavy ? (t < 0.45 ? 'mula' : t < 0.8 ? 'truck' : 'car') : t < 0.1 ? 'taxi' : t < 0.9 ? 'car' : 'truck';
         const m = vehicleMesh(type, pick(r, CAR_COLORS), pick(r, [0xffffff, 0xeeeeee, 0xcfd8dc]));
         m.rotation.y = cw.dir > 0 ? 0 : Math.PI;
-        m.position.set(-800 + ((k + 0.2 + r() * 0.6) * 1600) / n, 0.05, z);
+        m.position.set(-800 + ((k + 0.2 + r() * 0.6) * 1600) / n, 0.05, v);
         const speed = (type === 'mula' ? 15 : type === 'truck' ? 17 : 22 + r() * 6) * cw.dir;
         traffic.push({ m, speed });
-        group.add(m);
+        hw.add(m);
       }
     }
   }
+  // vehículos usando el carril auxiliar para entrar a la central
+  const auxV = (HIGHWAY.aux.v0 + HIGHWAY.near.v0) / 2;
+  const m1 = vehicleMesh('mula', 0xc62828, 0xeeeeee);
+  m1.position.set(62, 0.05, auxV);
+  const m2 = vehicleMesh('car', 0xf5f5f5);
+  m2.position.set(-78, 0.05, auxV);
+  hw.add(m1, m2);
 
   scene.add(group);
   return {
