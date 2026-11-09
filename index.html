@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Central de Abastos 3D · Ingenia Santander</title>
+    <meta name="description" content="Visor 3D interactivo de la Central de Abastos de Alimentos – Ingenia Santander, Grupo 3 (UDES)." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23243b2a'/><path d='M5 22 L16 9 L27 22 Z' fill='%2397c459'/><rect x='9' y='19' width='14' height='6' fill='%23e8efe0'/></svg>" />
+  </head>
+  <body>
+    <div id="scene"></div>
+    <div id="labels"></div>
+
+    <header class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32"><path d="M4 21 L16 8 L28 21 Z" fill="currentColor"/><rect x="8" y="19" width="16" height="7" rx="1" fill="currentColor" opacity=".55"/></svg>
+      </div>
+      <div>
+        <h1>Central de Abastos</h1>
+        <p>Ingenia Santander · Grupo 3 · UDES</p>
+      </div>
+    </header>
+
+    <button id="toggleInfo" class="pill" aria-expanded="true">
+      <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M4 5h16v2H4zm0 6h16v2H4zm0 6h10v2H4z"/></svg>
+      <span>Datos del proyecto</span>
+    </button>
+
+    <aside id="info" class="panel open" aria-label="Datos del proyecto">
+      <nav class="tabs" role="tablist"></nav>
+      <div class="tab-body"></div>
+    </aside>
+
+    <aside id="card" class="panel" aria-live="polite"></aside>
+
+    <div id="toolbar">
+      <div class="chips"></div>
+      <div class="sep"></div>
+      <button class="tool" data-view="overview" title="Vista general">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 3 2 8l10 5 10-5-10-5Zm-8 9 8 4 8-4v2l-8 4-8-4v-2Z"/></svg><span>General</span>
+      </button>
+      <button class="tool" data-view="top" title="Vista cenital">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 3h18v18H3V3Zm2 2v14h14V5H5Zm3 3h3v3H8V8Zm5 0h3v8h-3V8Zm-5 5h3v3H8v-3Z"/></svg><span>Cenital</span>
+      </button>
+      <button class="tool" data-toggle="labels" aria-pressed="true" title="Mostrar u ocultar etiquetas">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h12l6 7-6 7H3V5Zm2 2v10h9l4.3-5L14 7H5Z"/></svg><span>Etiquetas</span>
+      </button>
+      <button class="tool" data-toggle="roofs" aria-pressed="false" title="Quitar todas las cubiertas">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 3 1 11h3v10h16V11h3L12 3Zm6 16H6v-9.2l6-4.4 6 4.4V19Z"/></svg><span>Sin techos</span>
+      </button>
+    </div>
+
+    <div id="hint">
+      <span><kbd>Arrastrar</kbd> rotar</span>
+      <span><kbd>Clic der.</kbd> desplazar</span>
+      <span><kbd>Rueda</kbd> zoom</span>
+      <span><kbd>Clic</kbd> en un edificio para entrar</span>
+    </div>
+
+    <div id="tooltip"></div>
+
+    <div id="loader">
+      <div class="spin"></div>
+      <p>Construyendo la central de abastos…</p>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
